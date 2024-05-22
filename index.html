@@ -3,74 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Симуляция программирования</title>
-    <style>
-        body {
-            font-family: Courier, monospace;
-            background-color: black;
-            color: green;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }
-
-        .command-line {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            height: 30px;
-            background-color: black;
-            font-size: 1em;
-            line-height: 30px;
-            overflow: hidden;
-        }
-
-        .command-line p {
-            margin: 0;
-            animation: marquee 20s linear infinite;
-        }
-
-        @keyframes marquee {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
-        }
-
-        .container {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 2em;
-            margin-bottom: 20px;
-        }
-
-        .button {
-            background-color: #0080ff;
-            color: #fff;
-            padding: 15px 30px;
-            font-size: 1.2em;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            margin-right: 20px;
-        }
-
-        .button:hover {
-            background-color: #005cb9;
-        }
-    </style>
+    <title>Расскажи анекдот</title>
 </head>
 <body>
-    <div class="command-line">
-        <p>00:00:01 $ python script.py</p>
-    </div>
-
     <div class="container">
-        <h1>Симуляция программирования</h1>
+        <h1>Расскажи анекдот</h1>
         <button onclick="getJoke()">Расскажи анекдот</button>
         <button onclick="thankAuthor()">Поблагодарить автора</button>
     </div>
@@ -86,6 +23,3 @@
     </script>
 </body>
 </html>
-
-
-давай использовать этот код как базу 
