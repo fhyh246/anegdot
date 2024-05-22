@@ -67,6 +67,11 @@
             font-size: 3em;
             margin-top: 20px;
         }
+
+        .click {
+            font-size: 1.2em;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -92,6 +97,10 @@
             heart.innerHTML = "❤️";
             heart.classList.add("heart");
             document.body.appendChild(heart);
+            var clickText = document.createElement("p");
+            clickText.innerHTML = "Жмякни лапкой";
+            clickText.classList.add("click");
+            document.body.appendChild(clickText);
         }
     </script>
 </body>
