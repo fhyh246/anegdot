@@ -4,102 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Расскажи анекдот</title>
-    <style>
-        body {
-            font-family: Courier, monospace;
-            background-color: #000;
-            color: #00ff00;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }
-
-        .container {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 2em;
-            margin-bottom: 10px;
-            color: #ff0000; /* Красный цвет текста */
-            margin-top: -30px; /* Чуть поднять текст выше */
-        }
-
-        #joke {
-            font-size: 1.5em;
-            margin-bottom: 20px;
-            color: green; /* Зеленый цвет текста */
-        }
-
-        .button {
-            background-color: #0080ff;
-            color: #fff;
-            padding: 15px 30px;
-            font-size: 1.2em;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            margin-right: 20px;
-        }
-
-        .button:hover {
-            background-color: #005cb9;
-        }
-
-        .marquee {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            height: 30px;
-            background-color: #000;
-            overflow: hidden;
-        }
-
-        .marquee p {
-            display: inline-block;
-            white-space: nowrap;
-            margin: 0;
-            animation: marquee 20s linear infinite;
-            color: green; /* Зеленый цвет текста */
-        }
-
-        @keyframes marquee {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
-        }
-
-        .thank-button {
-            display: none; /* Скрываем кнопку по умолчанию */
-        }
-    </style>
 </head>
 <body>
-    <div class="marquee">
-        <p>Пробный анекдот: "Колобок повесился"</p>
-    </div>
-
     <div class="container">
         <h1>Расскажи анекдот</h1>
-        <button class="button" onclick="getJoke()">Расскажи анекдот</button>
-        <div id="joke"></div>
-        <button class="thank-button button" onclick="thankAuthor()">Поблагодарить автора</button>
+        <button onclick="getJoke()">Расскажи анекдот</button>
+        <button onclick="thankAuthor()">Поблагодарить автора</button>
     </div>
 
     <script>
-        async function getJoke() {
-            const response = await fetch('https://api.icndb.com/jokes/random');
-            const data = await response.json();
-            const joke = data.value.joke;
-            document.getElementById("joke").innerHTML = joke;
-            document.querySelector('.thank-button').style.display = 'block'; // Показываем кнопку после загрузки анекдота
+        function getJoke() {
+            alert("Как-то раз анекдотист решил написать код для своего сайта, но у него ничего не получилось, потому что он застрял в бесконечном цикле и не мог выбраться!");
         }
 
         function thankAuthor() {
-            alert("Спасибо за анекдот!");
+            alert("Спасибо за вашу поддержку!");
         }
     </script>
 </body>
