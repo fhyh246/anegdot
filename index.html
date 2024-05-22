@@ -4,12 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Расскажи анекдот</title>
+    <style>
+        body {
+            font-family: Courier, monospace;
+            background-color: #000;
+            color: #00ff00;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        #joke {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+
+        .button {
+            background-color: #0080ff;
+            color: #fff;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-right: 20px;
+        }
+
+        .button:hover {
+            background-color: #005cb9;
+        }
+    </style>
 </head>
 <body>
-    <h1>Расскажи анекдот</h1>
-    <button onclick="getJoke()">Расскажи анекдот</button>
-    <div id="joke"></div>
-    <button onclick="thankAuthor()">Поблагодарить автора</button>
+    <div class="container">
+        <h1>Расскажи анекдот</h1>
+        <button class="button" onclick="getJoke()">Расскажи анекдот</button>
+        <div id="joke"></div>
+        <button class="button" onclick="thankAuthor()">Поблагодарить автора</button>
+    </div>
 
     <script>
         async function getJoke() {
