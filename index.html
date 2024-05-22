@@ -12,27 +12,25 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
+            position: relative;
         }
 
-        .command-line {
+        .digits {
             position: fixed;
-            bottom: 0;
+            top: 0;
             width: 100%;
             height: 30px;
             background-color: black;
             font-size: 1em;
             line-height: 30px;
             overflow: hidden;
+            z-index: 1;
+            text-align: center;
+            color: green;
         }
 
-        .command-line p {
+        .digits p {
             margin: 0;
-            animation: marquee 20s linear infinite;
-        }
-
-        @keyframes marquee {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
         }
 
         .container {
@@ -41,6 +39,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
+            z-index: 2;
         }
 
         h1 {
@@ -65,12 +64,13 @@
     </style>
 </head>
 <body>
-    <div class="command-line">
-        <p>00:00:01 $ python script.py</p>
+    <div class="digits">
+        <p>10000111111100010000001000011100010000110010100001101011000100001010000010000010101100010000011000011101110000111000100000100010000101000100101110000010001001101100010000101000011111010000010001000000100001100001000011011110000110011100001100001000011010010000110000100001110111000001000100001010001001011100000100001110101000100000010000110000100010000011000011000010000110010100001100001000001000011110110000110000100001111111000011100010001001000100001110001000001000011110010000111101100001101011000001000011001010000010001000010100001100111000011010110000111011100001101011000011001110001000000100001100001000011110010000111100100000101011011111110010110111011100111101110</p>
     </div>
 
     <div class="container">
-        <button onclick="getJoke()">Расскажи анекдот</button>
+        <h1>Симуляция программирования</h1>
+        <button onclick="getJoke()" style="margin-bottom: 20px;">Расскажи анекдот</button><br>
         <button onclick="thankAuthor()">Поблагодарить автора</button>
     </div>
 
