@@ -48,6 +48,12 @@
             margin-bottom: 20px;
         }
 
+        .buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+
         .button {
             background-color: #0080ff;
             color: #fff;
@@ -56,7 +62,6 @@
             border: none;
             cursor: pointer;
             transition: background-color 0.3s;
-            margin-right: 20px;
         }
 
         .button:hover {
@@ -70,7 +75,7 @@
 
         .click {
             font-size: 1.2em;
-            color: white;
+            color: pink;
         }
     </style>
 </head>
@@ -81,8 +86,10 @@
 
     <div class="container">
         <h1>Приветствую тебя, странник</h1>
-        <button onclick="getJoke()">Расскажи анекдот</button>
-        <button onclick="thankAuthor()">Поблагодарить автора</button>
+        <div class="buttons">
+            <button onclick="getJoke()">Расскажи анекдот</button>
+            <button onclick="thankAuthor()">Поблагодарить автора</button>
+        </div>
     </div>
 
     <script>
