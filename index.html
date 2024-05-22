@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Симуляция программирования</title>
+    <title>Бегущая строка</title>
     <style>
         body {
             font-family: Courier, monospace;
@@ -14,7 +14,7 @@
             overflow: hidden;
         }
 
-        .command-line {
+        .running-line {
             position: fixed;
             bottom: 0;
             width: 100%;
@@ -23,16 +23,25 @@
             font-size: 1em;
             line-height: 30px;
             overflow: hidden;
+            animation: running-line 20s linear infinite;
+            z-index: 1; /* Помещаем бегущую строку поверх цифр */
         }
 
-        .command-line p {
-            margin: 0;
-            animation: marquee 20s linear infinite;
+        @keyframes running-line {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
         }
 
-        @keyframes marquee {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
+        .digits {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 30px;
+            background-color: black;
+            font-size: 1em;
+            line-height: 30px;
+            overflow: hidden;
+            z-index: 0; /* Помещаем цифры ниже бегущей строки */
         }
 
         .container {
@@ -65,12 +74,16 @@
     </style>
 </head>
 <body>
-    <div class="command-line">
-        <p>00:00:01 $ python script.py</p>
+    <div class="digits">
+        <p>10000111111100010000001000011100010000110010100001101011000100001010000010000010101100010000011000011101110000111000100000100010000101000100101110000010001001101100010000101000011111010000010001000000100001100001000011011110000110011100001100001000011010010000110000100001110111000001000100001010001001011100000100001110101000100000010000110000100010000011000011000010000110010100001100001000001000011110110000110000100001111111000011100010001001000100001110001000001000011110010000111101100001101011000001000011001010000010001000010100001100111000011010110000111011100001101011000011001110001000000100001100001000011110010000111100100000101011011111110010110111011100111101110</p>
+    </div>
+
+    <div class="running-line">
+        <p>Это бегущая строка. Она идет сверху вниз по всему экрану.</p>
     </div>
 
     <div class="container">
-        <h1>Симуляция программирования</h1>
+        <h1>Бегущая строка</h1>
         <button onclick="getJoke()">Расскажи анекдот</button>
         <button onclick="thankAuthor()">Поблагодарить автора</button>
     </div>
