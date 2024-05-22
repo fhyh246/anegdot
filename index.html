@@ -23,13 +23,16 @@
         }
 
         h1 {
-            font-size: 3em;
-            margin-bottom: 20px;
+            font-size: 2em;
+            margin-bottom: 10px;
+            color: #ff0000; /* Красный цвет текста */
+            margin-top: -30px; /* Чуть поднять текст выше */
         }
 
         #joke {
             font-size: 1.5em;
             margin-bottom: 20px;
+            color: green; /* Зеленый цвет текста */
         }
 
         .button {
@@ -61,24 +64,29 @@
             white-space: nowrap;
             margin: 0;
             animation: marquee 20s linear infinite;
+            color: green; /* Зеленый цвет текста */
         }
 
         @keyframes marquee {
             0% { transform: translateX(100%); }
             100% { transform: translateX(-100%); }
         }
+
+        .thank-button {
+            display: none; /* Скрываем кнопку по умолчанию */
+        }
     </style>
 </head>
 <body>
     <div class="marquee">
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis sed lectus vitae velit aliquet sagittis.</p>
+        <p>Пробный анекдот: "Колобок повесился"</p>
     </div>
 
     <div class="container">
         <h1>Расскажи анекдот</h1>
         <button class="button" onclick="getJoke()">Расскажи анекдот</button>
         <div id="joke"></div>
-        <button class="button" onclick="thankAuthor()">Поблагодарить автора</button>
+        <button class="thank-button button" onclick="thankAuthor()">Поблагодарить автора</button>
     </div>
 
     <script>
@@ -87,6 +95,7 @@
             const data = await response.json();
             const joke = data.value.joke;
             document.getElementById("joke").innerHTML = joke;
+            document.querySelector('.thank-button').style.display = 'block'; // Показываем кнопку после загрузки анекдота
         }
 
         function thankAuthor() {
