@@ -70,6 +70,7 @@
     </div>
 
     <div class="container">
+        <h1>Симуляция программирования</h1>
         <button onclick="getJoke()">Расскажи анекдот</button>
         <button onclick="thankAuthor()">Поблагодарить автора</button>
     </div>
@@ -80,7 +81,11 @@
         }
 
         function thankAuthor() {
-            alert("Спасибо за вашу поддержку!;)");
+            alert("Спасибо тебе большое, добрый человек!");
+            var heart = document.createElement("a");
+            heart.href = "https://www.donationalerts.com/r/kill_piper39";
+            heart.innerHTML = "❤️";
+            document.body.appendChild(heart);
         }
     </script>
 </body>
