@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Приветствую тебя, странник</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             font-family: Courier, monospace;
@@ -13,6 +14,7 @@
             padding: 0;
             overflow: hidden;
         }
+
         .command-line {
             position: fixed;
             bottom: 0;
@@ -23,14 +25,17 @@
             line-height: 30px;
             overflow: hidden;
         }
+
         .command-line p {
             margin: 0;
             animation: marquee 20s linear infinite;
         }
+
         @keyframes marquee {
             0% { transform: translateX(100%); }
             100% { transform: translateX(-100%); }
         }
+
         .container {
             position: absolute;
             top: 50%;
@@ -38,59 +43,79 @@
             transform: translate(-50%, -50%);
             text-align: center;
         }
+
         h1 {
-            font-size: 2em;
+            font-size: 2em; /* Увеличенный размер надписи */
             margin-bottom: 20px;
         }
+
         .buttons {
             display: flex;
             justify-content: space-around;
             margin-bottom: 20px;
         }
+
         .button {
             background-color: #0080ff;
             color: #fff;
-            padding: 15px 30px;
-            font-size: 1.2em;
+            padding: 10px 20px; /* Уменьшенный размер кнопок */
+            font-size: 1em;
             border: none;
-            cursor: pointer;
-            transition: background-color 0.3s;
             border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
         }
+
         .button:hover {
             background-color: #005cb9;
+            transform: scale(1.1);
         }
+
         .heart {
             font-size: 3em;
             margin-top: 20px;
         }
+
         .click {
             font-size: 1.2em;
             color: pink;
         }
-        .joke-window {
+
+        .joke-container {
             display: none;
-            background-color: #222;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-            color: white;
-            font-size: 1.2em;
+            animation: fadeIn 1s forwards;
         }
-        .social-buttons {
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .share-buttons {
             display: flex;
-            justify-content: space-around;
-            margin-top: 20px;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
         }
-        .social-button {
+
+        .share-button {
             background-color: #444;
             color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            text-decoration: none;
+            padding: 10px;
+            border-radius: 50%;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
         }
-        .social-button:hover {
+
+        .share-button:hover {
             background-color: #666;
+            transform: scale(1.1);
+        }
+
+        .share-button a {
+            color: white;
+            text-decoration: none;
         }
     </style>
 </head>
@@ -98,59 +123,85 @@
     <div class="command-line">
         <p>00:00:01 $ python script.py</p>
     </div>
+
     <div class="container">
         <h1>Приветствую тебя, странник</h1>
         <div class="buttons">
-            <button class="button" onclick="getJoke()">Расскажи анекдот</button>
+            <button class="button" onclick="showJoke()">Расскажи анекдот</button>
             <button class="button" onclick="thankAuthor()">Поблагодарить автора</button>
         </div>
-        <div id="jokeWindow" class="joke-window">
+        <div id="jokeContainer" class="joke-container">
             <p id="jokeText"></p>
-            <div class="social-buttons">
-                <button class="social-button" onclick="likeJoke()">❤️ <span id="likeCount">0</span></button>
-                <button class="social-button" onclick="nextJoke()">🔄</button>
-                <a class="social-button" href="https://telegram.me/share/url?url=YOUR_URL" target="_blank">Telegram</a>
-                <a class="social-button" href="https://vk.com/share.php?url=YOUR_URL" target="_blank">VK</a>
-                <a class="social-button" href="https://api.whatsapp.com/send?text=YOUR_TEXT" target="_blank">WhatsApp</a>
+            <div class="buttons">
+                <button class="button" id="likeButton" onclick="toggleLike()">❤️ <span id="likeCount">0</span></button>
+                <button class="button" onclick="nextJoke()">➡️</button>
+                <button class="button" onclick="shareJoke()">Поделиться</button>
             </div>
+            <div id="shareButtons" class="share-buttons"></div>
         </div>
     </div>
+
     <script>
-        let jokes = [];
+        const jokes = [
+            "Анекдот 1", "Анекдот 2", "Анекдот 3", "Анекдот 4", "Анекдот 5",
+            "Анекдот 6", "Анекдот 7", "Анекдот 8", "Анекдот 9", "Анекдот 10",
+            "Анекдот 11", "Анекдот 12", "Анекдот 13", "Анекдот 14", "Анекдот 15",
+            "Анекдот 16", "Анекдот 17", "Анекдот 18", "Анекдот 19", "Анекдот 20"
+        ];
+
         let currentJokeIndex = 0;
-        let likes = JSON.parse(localStorage.getItem('likes')) || {};
+        const likes = Array(jokes.length).fill(0);
+        const likedJokes = new Set();
 
-        fetch('jokes.json')
-            .then(response => response.json())
-            .then(data => {
-                jokes = data.jokes;
-            });
-
-        function getJoke() {
-            if (jokes.length > 0) {
-                currentJokeIndex = Math.floor(Math.random() * jokes.length);
-                displayJoke(currentJokeIndex);
-            }
+        function showJoke() {
+            const jokeContainer = document.getElementById("jokeContainer");
+            jokeContainer.style.display = "block";
+            displayJoke();
         }
 
-        function displayJoke(index) {
-            document.getElementById('jokeText').innerText = jokes[index];
-            document.getElementById('likeCount').innerText = likes[index] || 0;
-            document.getElementById('jokeWindow').style.display = 'block';
+        function displayJoke() {
+            const jokeText = document.getElementById("jokeText");
+            jokeText.innerText = jokes[currentJokeIndex];
+            document.getElementById("likeCount").innerText = likes[currentJokeIndex];
+            document.getElementById("likeButton").style.color = likedJokes.has(currentJokeIndex) ? 'red' : 'white';
+            document.getElementById("shareButtons").innerHTML = ''; // Clear previous share buttons
+        }
+
+        function toggleLike() {
+            if (likedJokes.has(currentJokeIndex)) {
+                likes[currentJokeIndex]--;
+                likedJokes.delete(currentJokeIndex);
+            } else {
+                likes[currentJokeIndex]++;
+                likedJokes.add(currentJokeIndex);
+            }
+            document.getElementById("likeCount").innerText = likes[currentJokeIndex];
+            document.getElementById("likeButton").style.color = likedJokes.has(currentJokeIndex) ? 'red' : 'white';
         }
 
         function nextJoke() {
             currentJokeIndex = (currentJokeIndex + 1) % jokes.length;
-            displayJoke(currentJokeIndex);
+            displayJoke();
         }
 
-        function likeJoke() {
-            if (!likes[currentJokeIndex]) {
-                likes[currentJokeIndex] = 0;
-            }
-            likes[currentJokeIndex]++;
-            document.getElementById('likeCount').innerText = likes[currentJokeIndex];
-            localStorage.setItem('likes', JSON.stringify(likes));
+        function shareJoke() {
+            const joke = jokes[currentJokeIndex];
+            const url = encodeURIComponent(window.location.href);
+            const text = encodeURIComponent(`Посмотри этот анекдот: ${joke}`);
+            const telegramUrl = `https://t.me/share/url?url=${url}&text=${text}`;
+            const vkUrl = `https://vk.com/share.php?url=${url}&title=${text}`;
+            const whatsappUrl = `https://api.whatsapp.com/send?text=${text}%20${url}`;
+
+            const shareButtons = `
+                <div>
+                    <div class="share-button"><a href="${telegramUrl}" target="_blank"><i class="fab fa-telegram-plane"></i></a></div>
+                    <div class="share-button"><a href="${vkUrl}" target="_blank"><i class="fab fa-vk"></i></a></div>
+                    <div class="share-button"><a href="${whatsappUrl}" target="_blank"><i class="fab fa-whatsapp"></i></a></div>
+                </div>
+            `;
+
+            const shareButtonsContainer = document.getElementById("shareButtons");
+            shareButtonsContainer.innerHTML = shareButtons;
         }
 
         function thankAuthor() {
