@@ -1,23 +1,133 @@
-{
-    "jokes": [
-        "Что получится, если скрестить программиста и алкоголика? Вечный цикл.",
-        "Почему программисты не ходят в лес? Потому что там много багов.",
-        "Как программисты решают проблемы? Они их комментируют и продолжают работать.",
-        "Почему программисты всегда путают Рождество и Хэллоуин? Потому что DEC 25 = OCT 31.",
-        "Что сказал сервер клиенту? 404: чувство не найдено.",
-        "Почему программисты любят тишину? Потому что их код сам за себя говорит.",
-        "Что общего у программиста и вампира? Они оба работают лучше ночью.",
-        "Почему программистам сложно найти отношения? Потому что они работают по логике, а не по эмоциям.",
-        "Что говорит программист после удачного компиляции? 'Собрано и готово к действию!'",
-        "Как программист выражает любовь? Он пишет 'I <3 You'.",
-        "Почему программисты не бегают? Потому что они предпочитают циклы.",
-        "Что такое ошибка программиста? Это просто функция с неожиданным поведением.",
-        "
-json
-Копировать код
-{
-    "jokes": [
-        "Что получится, если скрестить программиста и алкоголика? Вечный цикл.",
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Приветствую тебя, странник</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Courier, monospace;
+            background-color: black;
+            color: green;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .command-line {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            height: 30px;
+            background-color: black;
+            font-size: 1em;
+            line-height: 30px;
+            overflow: hidden;
+        }
+        .command-line p {
+            margin: 0;
+            animation: marquee 20s linear infinite;
+        }
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        h1 {
+            font-size: 1.5em;
+            margin-bottom: 30px;
+            border-radius: 20px;
+        }
+        .buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 1px;
+        }
+        .button {
+            background-color: #555;
+            color: #fff;
+            padding: 15px 20px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        .button:hover {
+            background-color: #444;
+            transform: scale(1.1);
+        }
+        .heart {
+            font-size: 3em;
+            margin-top: 20px;
+        }
+        .click {
+            font-size: 1.2em;
+            color: pink;
+        }
+        .joke-container {
+            display: none;
+            animation: fadeIn 1s forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .share-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .share-button {
+            background-color: #444;
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        .share-button:hover {
+            background-color: #666;
+            transform: scale(1.1);
+        }
+        .share-button a {
+            color: white;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="command-line">
+        <p>00:00:01 $ python script.py</p>
+    </div>
+    <div class="container">
+        <h1>Приветствую тебя, странник</h1>
+        <div class="buttons">
+            <button class="button" onclick="showJoke()">Расскажи анекдот</button>
+            <div style="width: 20px;"></div>
+            <button class="button" onclick="thankAuthor()">Поблагодарить автора</button>
+        </div>
+        <div id="jokeContainer" class="joke-container">
+            <p id="jokeText"></p>
+            <div class="buttons">
+                <button class="button" id="likeButton" onclick="toggleLike()">❤️ <span id="likeCount">0</span></button>
+                <button class="button" onclick="nextJoke()">🆕</button>
+                <button class="button" onclick="shareJoke()">Поделиться</button>
+            </div>
+            <div id="shareButtons" class="share-buttons"></div>
+        </div>
+   </div>
+    <script>
+        const jokes = [
+            "Что получится, если скрестить программиста и алкоголика? Вечный цикл.",
         "Почему программисты не ходят в лес? Потому что там много багов.",
         "Как программисты решают проблемы? Они их комментируют и продолжают работать.",
         "Почему программисты всегда путают Рождество и Хэллоуин? Потому что DEC 25 = OCT 31.",
@@ -62,9 +172,70 @@ json
         "Как программист выражает благодарность? Он пишет комментарии в коде.",
         "Почему программисты любят ночную работу? Потому что тогда интернет быстрее.",
         "Что делает программист, когда у него ошибка? Он ищет в Google.",
-        "Почему программисты не заводят дневники? Потому что они предпочитают логи.",
+    "Почему программисты не заводят дневники? Потому что они предпочитают логи.",
         "Как программист справляется с усталостью? Он просто закрывает все вкладки.",
         "Что сказал программист, когда его спросили о жизни? 'Это всего лишь цикл.'",
         "Почему программисты не едят сладости? Потому что у них уже есть сахарный код."
+        ];
+        let currentJokeIndex = 0;
+        const likes = Array(jokes.length).fill(0);
+        const likedJokes = new Set();
+        function showJoke() {
+            const jokeContainer = document.getElementById("jokeContainer");
+            jokeContainer.style.display = "block";
+            displayJoke();
+        }
+        function displayJoke() {
+            const jokeText = document.getElementById("jokeText");
+            jokeText.innerText = jokes[currentJokeIndex];
+            document.getElementById("likeCount").innerText = likes[currentJokeIndex];
+            document.getElementById("likeButton").style.color = likedJokes.has(currentJokeIndex) ? 'red' : 'white';
+            document.getElementById("shareButtons").innerHTML = '';
+        }
+        function toggleLike() {
+            if (likedJokes.has(currentJokeIndex)) {
+                likes[currentJokeIndex]--;
+                likedJokes.delete(currentJokeIndex);
+            } else {
+                likes[currentJokeIndex]++;
+                likedJokes.add(currentJokeIndex);
+            }
+            document.getElementById("likeCount").innerText = likes[currentJokeIndex];
+            document.getElementById("likeButton").style.color = likedJokes.has(currentJokeIndex) ? 'red' : 'white';
+        }
+        function nextJoke() {
+            currentJokeIndex = Math.floor(Math.random() * jokes.length);
+            displayJoke();
+        }
+        function shareJoke() {
+            const joke = jokes[currentJokeIndex];
+            const url = encodeURIComponent(window.location.href);
+            const text = encodeURIComponent(`Посмотри этот анекдот: ${joke}`);
+            const telegramUrl = `https://t.me/share/url?url=${url}&text=${text}`;
+            const vkUrl = `https://vk.com/share.php?url=${url}&title=${text}`;
+            const whatsappUrl = `https://api.whatsapp.com/send?text=${text}%20${url}`;
+            const shareButtons = `
+                <div class="share-button"><a href="${telegramUrl}" target="_blank"><i class="fab fa-telegram-plane"></i></a></div>
+                <div class="share-button"><a href="${vkUrl}" target="_blank"><i class="fab fa-vk"></i></a></div>
+                <div class="share-button"><a href="${whatsappUrl}" target="_blank"><i class="fab fa-whatsapp"></i></a></div>
+            `;
+            const shareButtonsContainer = document.getElementById("shareButtons");
+            shareButtonsContainer.innerHTML = shareButtons;
+        }
+        function thankAuthor() {
+            alert("Спасибо тебе большое, добрый человек!");
+            var heart = document.createElement("a");
+            heart.href = "https://www.donationalerts.com/r/kill_piper39";
+            heart.innerHTML = "❤️";
+            heart.classList.add("heart");
+            document.body.appendChild(heart);
+            var clickText = document.createElement("p");
+            clickText.innerHTML = "Жмякни лапкой";
+            clickText.classList.add("click");
+            document.body.appendChild(clickText);
+        }
+    </script>
+</body>
+</html>
     ]
 }
