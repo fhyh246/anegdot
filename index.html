@@ -15,7 +15,7 @@
             display: block;
             margin: 0 auto;
             width: 100%;
-            max-width: 300px;
+            max-width: 400px;
         }
         ul {
             list-style-type: none;
@@ -34,6 +34,7 @@
 
     <h2>Сканировать QR-код</h2>
     <video id="video"></video>
+    <div id="message"></div>
 
     <h2>Наличные</h2>
     <ul id="cash-list"></ul>
@@ -46,13 +47,16 @@
         const video = document.getElementById('video');
         const cashList = document.getElementById('cash-list');
         const cardList = document.getElementById('card-list');
+        const message = document.getElementById('message');
 
         function startVideo() {
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(stream => {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: 1280, height: 720 } }).then(stream => {
                 video.srcObject = stream;
-                video.setAttribute('playsinline', true); // нужно для iOS
+                video.setAttribute('playsinline', true); // Нужно для iOS
                 video.play();
                 requestAnimationFrame(tick);
+            }).catch(err => {
+                message.textContent = `Ошибка доступа к камере: ${err}`;
             });
         }
 
@@ -69,13 +73,15 @@
 
                 if (code) {
                     processQRCode(code.data);
+                    message.textContent = "QR-код успешно сканирован!";
+                } else {
+                    message.textContent = "Ищем QR-код...";
                 }
             }
             requestAnimationFrame(tick);
         }
 
         function processQRCode(data) {
-            // Пример данных из QR-кода: "Товар 1;cash;Товар 2;card;Товар 3;cash"
             const items = data.split(';');
 
             for (let i = 0; i < items.length; i += 2) {
