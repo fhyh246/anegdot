@@ -50,13 +50,16 @@
         const message = document.getElementById('message');
 
         function startVideo() {
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: 1280, height: 720 } }).then(stream => {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: 1280, height: 720 } })
+            .then(stream => {
                 video.srcObject = stream;
-                video.setAttribute('playsinline', true); // Нужно для iOS
+                video.setAttribute('playsinline', true); // нужно для iOS
                 video.play();
                 requestAnimationFrame(tick);
-            }).catch(err => {
-                message.textContent = `Ошибка доступа к камере: ${err}`;
+            })
+            .catch(err => {
+                console.error('Ошибка доступа к камере:', err);
+                message.textContent = `Ошибка доступа к камере: ${err.message}`;
             });
         }
 
@@ -72,9 +75,11 @@
                 const code = jsQR(imageData.data, imageData.width, imageData.height);
 
                 if (code) {
+                    console.log('QR-код найден:', code.data);
                     processQRCode(code.data);
                     message.textContent = "QR-код успешно сканирован!";
                 } else {
+                    console.log('QR-код не найден, продолжаем поиск...');
                     message.textContent = "Ищем QR-код...";
                 }
             }
@@ -82,20 +87,28 @@
         }
 
         function processQRCode(data) {
-            const items = data.split(';');
+            try {
+                console.log('Обработка данных QR-кода:', data);
+                // Пример данных из QR-кода: "Товар 1;cash;Товар 2;card;Товар 3;cash"
+                const items = data.split(';');
 
-            for (let i = 0; i < items.length; i += 2) {
-                const item = items[i];
-                const paymentMethod = items[i + 1];
+                for (let i = 0; i < items.length; i += 2) {
+                    const item = items[i];
+                    const paymentMethod = items[i + 1];
 
-                const li = document.createElement('li');
-                li.textContent = item;
+                    const li = document.createElement('li');
+                    li.textContent = item;
 
-                if (paymentMethod === 'cash') {
-                    cashList.appendChild(li);
-                } else if (paymentMethod === 'card') {
-                    cardList.appendChild(li);
+                    if (paymentMethod === 'cash') {
+                        cashList.appendChild(li);
+                    } else if (paymentMethod === 'card') {
+                        cardList.appendChild(li);
+                    } else {
+                        console.warn('Неизвестный метод оплаты:', paymentMethod);
+                    }
                 }
+            } catch (err) {
+                console.error('Ошибка обработки QR-кода:', err);
             }
         }
 
