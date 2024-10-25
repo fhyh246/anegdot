@@ -92,14 +92,21 @@
 
             html5QrCode = new Html5Qrcode("qr-reader");
 
-            html5QrCode.start(
-                { facingMode: "environment" },
-                { fps: 10, qrbox: 250 },
-                onScanSuccess,
-                onScanFailure
-            ).catch(err => {
-                console.error(`Ошибка при запуске сканера: ${err}`);
-            });
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(() => {
+                    html5QrCode.start(
+                        { facingMode: "environment" },
+                        { fps: 10, qrbox: 250 },
+                        onScanSuccess,
+                        onScanFailure
+                    ).catch(err => {
+                        console.error(`Ошибка при запуске сканера: ${err}`);
+                    });
+                })
+                .catch(err => {
+                    console.error("Ошибка доступа к камере: ", err);
+                    alert("Для использования сканера предоставьте доступ к камере.");
+                });
         }
 
         // Функция для обработки данных из QR-кода
