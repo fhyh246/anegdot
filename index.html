@@ -3,11 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <title>Сканер QR-чеков</title>
-    <!-- Подключение библиотеки html5-qrcode -->
     <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #111;
+            color: #FFD700;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        h1, h2 {
+            color: #FFD700;
+            margin-bottom: 10px;
+        }
+        
+        #qr-reader {
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .button {
+            background-color: #FFD700;
+            color: #111;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+            border-radius: 5px;
+        }
+        
+        .button:hover {
+            background-color: #222;
+            color: #FFD700;
+        }
+        
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin-top: 15px;
+        }
+
+        li {
+            background-color: #222;
+            color: #FFD700;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: transform 0.3s;
+        }
+        
+        li:hover {
+            transform: scale(1.05);
+        }
+
+    </style>
 </head>
 <body>
     <h1>Касса</h1>
+    
+    <button id="startScanBtn" class="button">Начать заполнение</button>
+    <button id="addBtn" class="button" style="display: none;">Добавить</button>
+
+    <div id="qr-reader"></div>
+    <div id="qr-reader-results"></div>
+
     <div>
         <h2>Безнал</h2>
         <ul id="bezNalList"></ul>
@@ -17,11 +80,39 @@
         <ul id="nalList"></ul>
     </div>
 
-    <div id="qr-reader" style="width: 500px;"></div>
-    <div id="qr-reader-results"></div>
-
     <script>
-        // Функция для обработки и добавления данных из QR-кода
+        let html5QrCode;
+        let lastScannedData = "";
+
+        // Функция для начала сканирования
+        function startScanning() {
+            document.getElementById('qr-reader').style.display = 'block';
+            document.getElementById('addBtn').style.display = 'inline-block';
+
+            html5QrCode = new Html5Qrcode("qr-reader");
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: 250 },
+                onScanSuccess,
+                onScanFailure
+            ).catch(err => {
+                console.error(`Ошибка при запуске сканера: ${err}`);
+            });
+        }
+
+        // Функция для обработки данных из QR-кода
+        function onScanSuccess(decodedText, decodedResult) {
+            // Сохраняем последние считанные данные
+            lastScannedData = decodedText;
+            document.getElementById('qr-reader-results').innerText = `Данные из QR: ${decodedText}`;
+        }
+
+        function onScanFailure(error) {
+            console.warn(`Ошибка сканирования: ${error}`);
+        }
+
+        // Функция обработки и добавления данных в списки
         function processQRData(data) {
             const lines = data.trim().split('\n');
             const bezNalList = document.getElementById('bezNalList');
@@ -56,32 +147,18 @@
             return line;
         }
 
-        // Инициализация html5-qrcode для сканирования
-        function onScanSuccess(decodedText, decodedResult) {
-            // Выводим результат для проверки
-            document.getElementById('qr-reader-results').innerText = `Данные из QR: ${decodedText}`;
-            
-            // Обрабатываем данные
-            processQRData(decodedText);
-        }
+        // Обработчик кнопки "Начать заполнение"
+        document.getElementById('startScanBtn').addEventListener('click', () => {
+            startScanning();
+        });
 
-        function onScanFailure(error) {
-            // Ошибки сканирования можно игнорировать или выводить для отладки
-            console.warn(`Ошибка сканирования: ${error}`);
-        }
-
-        // Настройка QR-сканера с вызовами при успехе или ошибке
-        const html5QrCode = new Html5Qrcode("qr-reader");
-        const config = { fps: 10, qrbox: 250 };
-
-        // Запускаем сканирование с использованием камеры
-        html5QrCode.start(
-            { facingMode: "environment" }, // Использует заднюю камеру
-            config,
-            onScanSuccess,
-            onScanFailure
-        ).catch(err => {
-            console.error(`Ошибка при запуске сканера: ${err}`);
+        // Обработчик кнопки "Добавить"
+        document.getElementById('addBtn').addEventListener('click', () => {
+            if (lastScannedData) {
+                processQRData(lastScannedData);
+                lastScannedData = "";  // Очистка данных после добавления
+                document.getElementById('qr-reader-results').innerText = "";
+            }
         });
     </script>
 </body>
