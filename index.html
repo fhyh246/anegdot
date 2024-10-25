@@ -88,6 +88,7 @@
         function startScanning() {
             document.getElementById('qr-reader').style.display = 'block';
             document.getElementById('addBtn').style.display = 'inline-block';
+            document.getElementById('qr-reader-results').innerText = "Сканирование QR-кода...";
 
             html5QrCode = new Html5Qrcode("qr-reader");
 
@@ -105,7 +106,14 @@
         function onScanSuccess(decodedText, decodedResult) {
             // Сохраняем последние считанные данные
             lastScannedData = decodedText;
-            document.getElementById('qr-reader-results').innerText = `Данные из QR: ${decodedText}`;
+            document.getElementById('qr-reader-results').innerText = `Считанные данные: ${decodedText}`;
+            
+            // Остановить сканирование после успешного считывания
+            html5QrCode.stop().then(() => {
+                console.log("Сканирование остановлено.");
+            }).catch(err => {
+                console.error("Ошибка остановки сканирования: ", err);
+            });
         }
 
         function onScanFailure(error) {
@@ -157,7 +165,9 @@
             if (lastScannedData) {
                 processQRData(lastScannedData);
                 lastScannedData = "";  // Очистка данных после добавления
-                document.getElementById('qr-reader-results').innerText = "";
+                document.getElementById('qr-reader-results').innerText = "Добавлено в таблицу";
+                document.getElementById('qr-reader').style.display = 'none';
+                document.getElementById('addBtn').style.display = 'none';
             }
         });
     </script>
