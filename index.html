@@ -1,119 +1,88 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Сканирование QR-кода и добавление товаров</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
-        h1, h2 {
-            text-align: center;
-        }
-        #video {
-            display: block;
-            margin: 0 auto;
-            width: 100%;
-            max-width: 400px;
-        }
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        li {
-            padding: 5px;
-            background-color: #f0f0f0;
-            margin: 5px 0;
-        }
-    </style>
+    <title>Сканер QR-чеков</title>
+    <!-- Подключение библиотеки html5-qrcode -->
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 </head>
 <body>
+    <h1>Касса</h1>
+    <div>
+        <h2>Безнал</h2>
+        <ul id="bezNalList"></ul>
+    </div>
+    <div>
+        <h2>Наличные</h2>
+        <ul id="nalList"></ul>
+    </div>
 
-    <h1>Список товаров</h1>
+    <div id="qr-reader" style="width: 500px;"></div>
+    <div id="qr-reader-results"></div>
 
-    <h2>Сканировать QR-код</h2>
-    <video id="video"></video>
-    <div id="message"></div>
-
-    <h2>Наличные</h2>
-    <ul id="cash-list"></ul>
-
-    <h2>Безналичные</h2>
-    <ul id="card-list"></ul>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.3.1/jsQR.min.js"></script>
     <script>
-        const video = document.getElementById('video');
-        const cashList = document.getElementById('cash-list');
-        const cardList = document.getElementById('card-list');
-        const message = document.getElementById('message');
+        // Функция для обработки и добавления данных из QR-кода
+        function processQRData(data) {
+            const lines = data.trim().split('\n');
+            const bezNalList = document.getElementById('bezNalList');
+            const nalList = document.getElementById('nalList');
 
-        function startVideo() {
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: 1280, height: 720 } })
-            .then(stream => {
-                video.srcObject = stream;
-                video.setAttribute('playsinline', true); // нужно для iOS
-                video.play();
-                requestAnimationFrame(tick);
-            })
-            .catch(err => {
-                console.error('Ошибка доступа к камере:', err);
-                message.textContent = `Ошибка доступа к камере: ${err.message}`;
+            lines.forEach(line => {
+                const timeAdjusted = adjustTime(line);
+                const listItem = document.createElement('li');
+                listItem.textContent = timeAdjusted;
+
+                if (line.includes("Наличные")) {
+                    nalList.appendChild(listItem);
+                } else {
+                    bezNalList.appendChild(listItem);
+                }
             });
         }
 
-        function tick() {
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                const context = canvas.getContext('2d');
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // Функция корректировки времени на один час назад
+        function adjustTime(line) {
+            const timePattern = /(\d{1,2}) (\d{2})$/;
+            const match = line.match(timePattern);
 
-                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-                if (code) {
-                    console.log('QR-код найден:', code.data);
-                    processQRCode(code.data);
-                    message.textContent = "QR-код успешно сканирован!";
-                } else {
-                    console.log('QR-код не найден, продолжаем поиск...');
-                    message.textContent = "Ищем QR-код...";
-                }
+            if (match) {
+                let hours = parseInt(match[1], 10);
+                const minutes = match[2];
+                
+                // Уменьшить время на один час
+                hours = (hours - 1 + 24) % 24;
+                return line.replace(timePattern, `${hours} ${minutes}`);
             }
-            requestAnimationFrame(tick);
+            return line;
         }
 
-        function processQRCode(data) {
-            try {
-                console.log('Обработка данных QR-кода:', data);
-                // Пример данных из QR-кода: "Товар 1;cash;Товар 2;card;Товар 3;cash"
-                const items = data.split(';');
-
-                for (let i = 0; i < items.length; i += 2) {
-                    const item = items[i];
-                    const paymentMethod = items[i + 1];
-
-                    const li = document.createElement('li');
-                    li.textContent = item;
-
-                    if (paymentMethod === 'cash') {
-                        cashList.appendChild(li);
-                    } else if (paymentMethod === 'card') {
-                        cardList.appendChild(li);
-                    } else {
-                        console.warn('Неизвестный метод оплаты:', paymentMethod);
-                    }
-                }
-            } catch (err) {
-                console.error('Ошибка обработки QR-кода:', err);
-            }
+        // Инициализация html5-qrcode для сканирования
+        function onScanSuccess(decodedText, decodedResult) {
+            // Выводим результат для проверки
+            document.getElementById('qr-reader-results').innerText = `Данные из QR: ${decodedText}`;
+            
+            // Обрабатываем данные
+            processQRData(decodedText);
         }
 
-        startVideo();
+        function onScanFailure(error) {
+            // Ошибки сканирования можно игнорировать или выводить для отладки
+            console.warn(`Ошибка сканирования: ${error}`);
+        }
+
+        // Настройка QR-сканера с вызовами при успехе или ошибке
+        const html5QrCode = new Html5Qrcode("qr-reader");
+        const config = { fps: 10, qrbox: 250 };
+
+        // Запускаем сканирование с использованием камеры
+        html5QrCode.start(
+            { facingMode: "environment" }, // Использует заднюю камеру
+            config,
+            onScanSuccess,
+            onScanFailure
+        ).catch(err => {
+            console.error(`Ошибка при запуске сканера: ${err}`);
+        });
     </script>
-
 </body>
 </html>
