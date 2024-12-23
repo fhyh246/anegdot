@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Сканер QR-Кодов</title>
+  <title>Сканер QR-Кодов с Камеры</title>
   <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script> <!-- Для сканирования с фото -->
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -36,12 +37,13 @@
 </head>
 <body>
 
-  <h1>Сканер QR-Кодов для Товаров</h1>
+  <h1>Сканер QR-Кодов с Камеры</h1>
   
-  <!-- Кнопка для сканирования QR-кодов -->
-  <button id="scanButton" onclick="startScanner()">Сканировать QR-код</button>
+  <!-- Кнопка для активации камеры и сканирования -->
+  <button id="startScanBtn" onclick="startScanner()">Сканировать QR-код</button>
+  <button id="takePhotoBtn" onclick="takePhoto()" style="display: none;">Сделать фото</button>
   
-  <!-- Контейнер для сканера, скрыт до нажатия на кнопку -->
+  <!-- Контейнер для сканера камеры -->
   <div id="scanner-container"></div>
   
   <h2>Добавить товар</h2>
@@ -81,14 +83,16 @@
   <script>
     let scannerStarted = false;
     const scannerContainer = document.getElementById("scanner-container");
-    const scanButton = document.getElementById("scanButton");
+    const startScanBtn = document.getElementById("startScanBtn");
+    const takePhotoBtn = document.getElementById("takePhotoBtn");
     const html5QrCode = new Html5Qrcode("scanner-container");
 
     // Функция для старта сканера
     function startScanner() {
       if (!scannerStarted) {
         scannerStarted = true;
-        scanButton.innerText = "Остановить сканирование";
+        startScanBtn.innerText = "Остановить сканирование";
+        takePhotoBtn.style.display = "block"; // Показываем кнопку "Сделать фото"
         scannerContainer.style.display = "block";
 
         html5QrCode.start({ facingMode: "environment" }, {
@@ -106,7 +110,8 @@
     function stopScanner() {
       html5QrCode.stop().then(() => {
         scannerStarted = false;
-        scanButton.innerText = "Сканировать QR-код";
+        startScanBtn.innerText = "Сканировать QR-код";
+        takePhotoBtn.style.display = "none"; // Скрываем кнопку "Сделать фото"
         scannerContainer.style.display = "none";
         console.log("Сканер остановлен");
       }).catch((err) => {
@@ -114,11 +119,10 @@
       });
     }
 
-    // Функция обработки успешного сканирования QR-кода
+    // Функция для обработки успешного сканирования QR-кода
     function onScanSuccess(decodedText, decodedResult) {
-      // Предполагаем, что QR-код содержит данные в формате JSON
       try {
-        const productData = JSON.parse(decodedText);
+        const productData = JSON.parse(decodedText); // Предполагаем, что QR-код содержит данные в формате JSON
         console.log(productData); // Выводим данные для проверки
 
         // Заполняем форму на основе данных из QR-кода
@@ -130,6 +134,34 @@
         stopScanner();
       } catch (e) {
         console.error("Ошибка при обработке QR-кода:", e);
+      }
+    }
+
+    // Функция для захвата изображения с камеры
+    function takePhoto() {
+      const videoElement = document.querySelector('video');
+      const canvas = document.createElement('canvas');
+      canvas.width = videoElement.videoWidth;
+      canvas.height = videoElement.videoHeight;
+      const context = canvas.getContext('2d');
+      context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+      // Теперь сканируем QR-код с этого фото
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, canvas.width, canvas.height);
+      
+      if (code) {
+        console.log("QR-код найден: ", code.data);
+        try {
+          const productData = JSON.parse(code.data); // Предполагаем, что QR-код содержит данные в формате JSON
+          document.getElementById("productName").value = productData.name || "";
+          document.getElementById("productQuantity").value = productData.quantity || "";
+          document.getElementById("productPrice").value = productData.price || "";
+        } catch (e) {
+          console.error("Ошибка при обработке QR-кода:", e);
+        }
+      } else {
+        alert("QR-код не найден.");
       }
     }
 
