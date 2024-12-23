@@ -15,6 +15,7 @@
       width: 100%;
       height: 300px;
       margin-bottom: 20px;
+      display: none;
     }
     #results {
       margin-top: 20px;
@@ -37,7 +38,10 @@
 
   <h1>Сканер QR-Кодов для Товаров</h1>
   
-  <!-- Контейнер для сканера -->
+  <!-- Кнопка для сканирования QR-кодов -->
+  <button id="scanButton" onclick="startScanner()">Сканировать QR-код</button>
+  
+  <!-- Контейнер для сканера, скрыт до нажатия на кнопку -->
   <div id="scanner-container"></div>
   
   <h2>Добавить товар</h2>
@@ -48,13 +52,13 @@
   </select><br><br>
 
   <label for="productName">Название товара:</label>
-  <input type="text" id="productName" placeholder="Введите название товара"><br><br>
+  <input type="text" id="productName" placeholder="Введите название товара" readonly><br><br>
 
   <label for="productQuantity">Количество:</label>
-  <input type="number" id="productQuantity" placeholder="Введите количество"><br><br>
+  <input type="number" id="productQuantity" placeholder="Введите количество" readonly><br><br>
 
   <label for="productPrice">Цена:</label>
-  <input type="number" id="productPrice" placeholder="Введите цену"><br><br>
+  <input type="number" id="productPrice" placeholder="Введите цену" readonly><br><br>
 
   <button onclick="addProduct()">Добавить товар</button>
 
@@ -75,38 +79,58 @@
   </table>
 
   <script>
-    // Инициализация сканера QR-кодов
+    let scannerStarted = false;
     const scannerContainer = document.getElementById("scanner-container");
+    const scanButton = document.getElementById("scanButton");
     const html5QrCode = new Html5Qrcode("scanner-container");
 
-    // Функция обработки успешного сканирования QR-кода
-    function onScanSuccess(decodedText, decodedResult) {
-      // Для примера предполагаем, что QR-код содержит данные в формате:
-      // { "name": "Товар", "quantity": 10, "price": 1000 }
-      const productData = JSON.parse(decodedText);
-      
-      // Заполняем форму на основе данных из QR-кода
-      document.getElementById("productName").value = productData.name;
-      document.getElementById("productQuantity").value = productData.quantity;
-      document.getElementById("productPrice").value = productData.price;
-      
-      // Останавливаем сканирование после успешного сканирования
-      html5QrCode.stop().then((ignore) => {
-        console.log("QR Code Scanning stopped.");
+    // Функция для старта сканера
+    function startScanner() {
+      if (!scannerStarted) {
+        scannerStarted = true;
+        scanButton.innerText = "Остановить сканирование";
+        scannerContainer.style.display = "block";
+
+        html5QrCode.start({ facingMode: "environment" }, {
+          fps: 10,    // частота кадров
+          qrbox: 250  // размер области для сканирования
+        }, onScanSuccess).catch((err) => {
+          console.log("Ошибка сканирования:", err);
+        });
+      } else {
+        stopScanner();
+      }
+    }
+
+    // Функция для остановки сканера
+    function stopScanner() {
+      html5QrCode.stop().then(() => {
+        scannerStarted = false;
+        scanButton.innerText = "Сканировать QR-код";
+        scannerContainer.style.display = "none";
+        console.log("Сканер остановлен");
       }).catch((err) => {
-        console.log("Error stopping the QR scanner.", err);
+        console.log("Ошибка остановки сканера:", err);
       });
     }
 
-    // Функция начала сканирования
-    function startScanner() {
-      html5QrCode.start({ facingMode: "environment" }, {
-        fps: 10,
-        qrbox: 250
-      }, onScanSuccess)
-      .catch((err) => {
-        console.log("Ошибка сканирования:", err);
-      });
+    // Функция обработки успешного сканирования QR-кода
+    function onScanSuccess(decodedText, decodedResult) {
+      // Предполагаем, что QR-код содержит данные в формате JSON
+      try {
+        const productData = JSON.parse(decodedText);
+        console.log(productData); // Выводим данные для проверки
+
+        // Заполняем форму на основе данных из QR-кода
+        document.getElementById("productName").value = productData.name || "";
+        document.getElementById("productQuantity").value = productData.quantity || "";
+        document.getElementById("productPrice").value = productData.price || "";
+
+        // Останавливаем сканирование после успешного сканирования
+        stopScanner();
+      } catch (e) {
+        console.error("Ошибка при обработке QR-кода:", e);
+      }
     }
 
     // Функция добавления товара в таблицу
@@ -133,9 +157,6 @@
         alert("Пожалуйста, заполните все поля.");
       }
     }
-
-    // Запуск сканера при загрузке страницы
-    window.onload = startScanner;
   </script>
 
 </body>
