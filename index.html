@@ -1,182 +1,142 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>Сканер QR-чеков</title>
-    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #111;
-            color: #FFD700;
-            text-align: center;
-            padding: 20px;
-        }
-        
-        h1, h2 {
-            color: #FFD700;
-            margin-bottom: 10px;
-        }
-        
-        #qr-reader {
-            display: none;
-            margin-top: 20px;
-        }
-        
-        .button {
-            background-color: #FFD700;
-            color: #111;
-            border: none;
-            padding: 15px 30px;
-            font-size: 16px;
-            margin: 10px;
-            cursor: pointer;
-            transition: 0.3s;
-            border-radius: 5px;
-        }
-        
-        .button:hover {
-            background-color: #222;
-            color: #FFD700;
-        }
-        
-        ul {
-            list-style-type: none;
-            padding: 0;
-            margin-top: 15px;
-        }
-
-        li {
-            background-color: #222;
-            color: #FFD700;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: transform 0.3s;
-        }
-        
-        li:hover {
-            transform: scale(1.05);
-        }
-
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Сканер QR-Кодов</title>
+  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 20px;
+    }
+    #scanner-container {
+      width: 100%;
+      height: 300px;
+      margin-bottom: 20px;
+    }
+    #results {
+      margin-top: 20px;
+    }
+    table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid #000;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+  </style>
 </head>
 <body>
-    <h1>Касса</h1>
-    
-    <button id="startScanBtn" class="button">Начать заполнение</button>
-    <button id="addBtn" class="button" style="display: none;">Добавить</button>
 
-    <div id="qr-reader"></div>
-    <div id="qr-reader-results"></div>
+  <h1>Сканер QR-Кодов для Товаров</h1>
+  
+  <!-- Контейнер для сканера -->
+  <div id="scanner-container"></div>
+  
+  <h2>Добавить товар</h2>
+  <label for="productGroup">Группа:</label>
+  <select id="productGroup">
+    <option value="нал">Нал</option>
+    <option value="безнал">Безнал</option>
+  </select><br><br>
 
-    <div>
-        <h2>Безнал</h2>
-        <ul id="bezNalList"></ul>
-    </div>
-    <div>
-        <h2>Наличные</h2>
-        <ul id="nalList"></ul>
-    </div>
+  <label for="productName">Название товара:</label>
+  <input type="text" id="productName" placeholder="Введите название товара"><br><br>
 
-    <script>
-        let html5QrCode;
-        let lastScannedData = "";
+  <label for="productQuantity">Количество:</label>
+  <input type="number" id="productQuantity" placeholder="Введите количество"><br><br>
 
-        // Функция для начала сканирования
-        function startScanning() {
-            document.getElementById('qr-reader').style.display = 'block';
-            document.getElementById('addBtn').style.display = 'inline-block';
-            document.getElementById('qr-reader-results').innerText = "Сканирование QR-кода...";
+  <label for="productPrice">Цена:</label>
+  <input type="number" id="productPrice" placeholder="Введите цену"><br><br>
 
-            html5QrCode = new Html5Qrcode("qr-reader");
+  <button onclick="addProduct()">Добавить товар</button>
 
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(() => {
-                    html5QrCode.start(
-                        { facingMode: "environment" },
-                        { fps: 10, qrbox: 250 },
-                        onScanSuccess,
-                        onScanFailure
-                    ).catch(err => {
-                        console.error(`Ошибка при запуске сканера: ${err}`);
-                    });
-                })
-                .catch(err => {
-                    console.error("Ошибка доступа к камере: ", err);
-                    alert("Для использования сканера предоставьте доступ к камере.");
-                });
-        }
+  <!-- Таблица с товарами -->
+  <h2>Список товаров</h2>
+  <table id="productsTable">
+    <thead>
+      <tr>
+        <th>Группа</th>
+        <th>Название</th>
+        <th>Количество</th>
+        <th>Цена</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Данные товаров будут отображаться здесь -->
+    </tbody>
+  </table>
 
-        // Функция для обработки данных из QR-кода
-        function onScanSuccess(decodedText, decodedResult) {
-            // Сохраняем последние считанные данные
-            lastScannedData = decodedText;
-            document.getElementById('qr-reader-results').innerText = `Считанные данные: ${decodedText}`;
-            
-            // Остановить сканирование после успешного считывания
-            html5QrCode.stop().then(() => {
-                console.log("Сканирование остановлено.");
-            }).catch(err => {
-                console.error("Ошибка остановки сканирования: ", err);
-            });
-        }
+  <script>
+    // Инициализация сканера QR-кодов
+    const scannerContainer = document.getElementById("scanner-container");
+    const html5QrCode = new Html5Qrcode("scanner-container");
 
-        function onScanFailure(error) {
-            console.warn(`Ошибка сканирования: ${error}`);
-        }
+    // Функция обработки успешного сканирования QR-кода
+    function onScanSuccess(decodedText, decodedResult) {
+      // Для примера предполагаем, что QR-код содержит данные в формате:
+      // { "name": "Товар", "quantity": 10, "price": 1000 }
+      const productData = JSON.parse(decodedText);
+      
+      // Заполняем форму на основе данных из QR-кода
+      document.getElementById("productName").value = productData.name;
+      document.getElementById("productQuantity").value = productData.quantity;
+      document.getElementById("productPrice").value = productData.price;
+      
+      // Останавливаем сканирование после успешного сканирования
+      html5QrCode.stop().then((ignore) => {
+        console.log("QR Code Scanning stopped.");
+      }).catch((err) => {
+        console.log("Error stopping the QR scanner.", err);
+      });
+    }
 
-        // Функция обработки и добавления данных в списки
-        function processQRData(data) {
-            const lines = data.trim().split('\n');
-            const bezNalList = document.getElementById('bezNalList');
-            const nalList = document.getElementById('nalList');
+    // Функция начала сканирования
+    function startScanner() {
+      html5QrCode.start({ facingMode: "environment" }, {
+        fps: 10,
+        qrbox: 250
+      }, onScanSuccess)
+      .catch((err) => {
+        console.log("Ошибка сканирования:", err);
+      });
+    }
 
-            lines.forEach(line => {
-                const timeAdjusted = adjustTime(line);
-                const listItem = document.createElement('li');
-                listItem.textContent = timeAdjusted;
+    // Функция добавления товара в таблицу
+    function addProduct() {
+      const name = document.getElementById("productName").value;
+      const quantity = document.getElementById("productQuantity").value;
+      const price = document.getElementById("productPrice").value;
+      const group = document.getElementById("productGroup").value;
 
-                if (line.includes("Наличные")) {
-                    nalList.appendChild(listItem);
-                } else {
-                    bezNalList.appendChild(listItem);
-                }
-            });
-        }
+      if (name && quantity && price) {
+        const table = document.getElementById("productsTable").getElementsByTagName("tbody")[0];
+        const row = table.insertRow();
 
-        // Функция корректировки времени на один час назад
-        function adjustTime(line) {
-            const timePattern = /(\d{1,2}) (\d{2})$/;
-            const match = line.match(timePattern);
+        row.insertCell(0).textContent = group;
+        row.insertCell(1).textContent = name;
+        row.insertCell(2).textContent = quantity;
+        row.insertCell(3).textContent = price;
 
-            if (match) {
-                let hours = parseInt(match[1], 10);
-                const minutes = match[2];
-                
-                // Уменьшить время на один час
-                hours = (hours - 1 + 24) % 24;
-                return line.replace(timePattern, `${hours} ${minutes}`);
-            }
-            return line;
-        }
+        // Очистка формы после добавления
+        document.getElementById("productName").value = '';
+        document.getElementById("productQuantity").value = '';
+        document.getElementById("productPrice").value = '';
+      } else {
+        alert("Пожалуйста, заполните все поля.");
+      }
+    }
 
-        // Обработчик кнопки "Начать заполнение"
-        document.getElementById('startScanBtn').addEventListener('click', () => {
-            startScanning();
-        });
+    // Запуск сканера при загрузке страницы
+    window.onload = startScanner;
+  </script>
 
-        // Обработчик кнопки "Добавить"
-        document.getElementById('addBtn').addEventListener('click', () => {
-            if (lastScannedData) {
-                processQRData(lastScannedData);
-                lastScannedData = "";  // Очистка данных после добавления
-                document.getElementById('qr-reader-results').innerText = "Добавлено в таблицу";
-                document.getElementById('qr-reader').style.display = 'none';
-                document.getElementById('addBtn').style.display = 'none';
-            }
-        });
-    </script>
 </body>
 </html>
