@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Авторизация ВКонтакте</title>
+    <title>Авторизация ВКонтакте и загрузка видео</title>
 </head>
 <body>
-    <h1>Авторизация ВКонтакте и загрузка видео</h1>
+    <h1>Авторизация через ВКонтакте</h1>
 
     <!-- Поле для ввода ID группы -->
     <div>
@@ -14,62 +14,63 @@
         <input type="text" id="groupIdInput" placeholder="Пример: 123456789">
         <button onclick="saveGroupId()">Сохранить ID группы</button>
     </div>
-    
+
     <!-- Поле для отображения статуса -->
     <div id="status" style="margin-top: 20px; color: red;"></div>
-    
-    <!-- Подключение VKID SDK -->
+
+    <!-- Floating One Tap -->
     <div>
         <script src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
         <script type="text/javascript">
             if ('VKIDSDK' in window) {
                 const VKID = window.VKIDSDK;
-                let groupId = ''; // ID группы будет сохранен здесь
+                let groupId = ''; // ID группы
+                let accessToken = ''; // Токен пользователя
 
                 // Инициализация VKID SDK
                 VKID.Config.init({
-                    app: 52966542, // ID вашего приложения
+                    app: 52966542, // ID приложения
                     redirectUrl: 'https://fhyh246.github.io/anegdot/', // URL редиректа
                     responseMode: VKID.ConfigResponseMode.Callback,
                     source: VKID.ConfigSource.LOWCODE,
-                    scope: 'video,groups,offline', // Запрашиваемые права
+                    scope: 'video,groups,offline', // Запрашиваемые доступы
                 });
 
-                // Создание кнопки авторизации One Tap
-                const oneTap = new VKID.OneTap();
+                // Floating One Tap
+                const floatingOneTap = new VKID.FloatingOneTap();
 
-                oneTap.render({
-                    container: document.currentScript.parentElement,
+                floatingOneTap.render({
+                    appName: 'YouTube Premium',
                     showAlternativeLogin: true
                 })
                 .on(VKID.WidgetEvents.ERROR, vkidOnError)
-                .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
+                .on(VKID.FloatingOneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
                     const code = payload.code;
                     const deviceId = payload.device_id;
 
-                    // Обмен кода на токен доступа
                     VKID.Auth.exchangeCode(code, deviceId)
                         .then(vkidOnSuccess)
                         .catch(vkidOnError);
                 });
 
-                // Обработка успешной авторизации
-                function vkidOnSuccess(data) {
-                    console.log("Успешная авторизация:", data);
-                    const token = data.access_token;
-                    document.getElementById('status').innerText = "Авторизация прошла успешно! Токен: " + token;
+                // OAuth List
+                const oAuth = new VKID.OAuthList();
 
-                    // Использование токена для дальнейших операций
-                    startVideoUpload(token);
-                }
+                oAuth.render({
+                    container: document.currentScript.parentElement,
+                    oauthList: ['vkid']
+                })
+                .on(VKID.WidgetEvents.ERROR, vkidOnError)
+                .on(VKID.OAuthListInternalEvents.LOGIN_SUCCESS, function (payload) {
+                    const code = payload.code;
+                    const deviceId = payload.device_id;
 
-                // Обработка ошибок авторизации
-                function vkidOnError(error) {
-                    console.error("Ошибка авторизации:", error);
-                    document.getElementById('status').innerText = "Ошибка авторизации. Проверьте настройки.";
-                }
+                    VKID.Auth.exchangeCode(code, deviceId)
+                        .then(vkidOnSuccess)
+                        .catch(vkidOnError);
+                });
 
-                // Функция для сохранения ID группы
+                // Сохранение ID группы
                 function saveGroupId() {
                     const input = document.getElementById('groupIdInput').value.trim();
                     if (input) {
@@ -80,15 +81,29 @@
                     }
                 }
 
-                // Заглушка для функции загрузки видео
-                function startVideoUpload(token) {
-                    if (!groupId) {
-                        document.getElementById('status').innerText = "Введите ID группы перед загрузкой видео.";
+                // Успешная авторизация
+                function vkidOnSuccess(data) {
+                    floatingOneTap.close();
+                    console.log("Успешная авторизация:", data);
+                    accessToken = data.access_token;
+                    document.getElementById('status').innerText = "Авторизация успешна. Токен получен.";
+                }
+
+                // Обработка ошибок
+                function vkidOnError(error) {
+                    console.error("Ошибка авторизации:", error);
+                    document.getElementById('status').innerText = "Ошибка авторизации. Проверьте настройки.";
+                }
+
+                // Заглушка для загрузки видео
+                function startVideoUpload() {
+                    if (!groupId || !accessToken) {
+                        document.getElementById('status').innerText = "Введите ID группы и авторизуйтесь.";
                         return;
                     }
-                    
-                    console.log("Готов к загрузке видео в группу ID:", groupId, "с токеном:", token);
-                    // Здесь можно добавить логику для загрузки видео в группу
+
+                    console.log("Начало загрузки видео. Группа:", groupId, "Токен:", accessToken);
+                    // Здесь добавить логику загрузки видео
                 }
             }
         </script>
