@@ -107,7 +107,7 @@
             document.getElementById("stop").disabled = false;
 
             // Запускаем 500 потоков с прокси
-            for (let i = 0; i < 800; i++) {
+            for (let i = 0; i < 50000; i++) {
                 continuousCheckWithProxy(i);
             }
         }
