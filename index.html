@@ -37,6 +37,7 @@
     <script>
         let groupId = ''; // ID группы
         let accessToken = ''; // Токен пользователя
+        let youtubeApiKey = 'AIzaSyAP6_WnY1mY2f-Wu-bmXucBt3ZKd15xUbE'; // Ваш YouTube API ключ
 
         // Функция для вывода в консоль
         function logToConsole(message) {
@@ -64,7 +65,7 @@
 
             // Здесь должен быть вызов авторизации (например, через VKID SDK или OAuth)
             // В примере предполагается, что токен уже будет получен после успешной авторизации.
-            accessToken = "ВАШ_ТОКЕН"; // Здесь подставьте реальный токен после авторизации
+            accessToken = "vk1.a.gHSaXmdTg09tetrGXSU2Y0vh5LL0m4RIAeCZqypgp_bNkLydy850nopp02JNjjsXuy2B4jKynySRb1klvy-5xsxFfzAqa9CfvG7EjRZEQnDAdm_dBpA0px4Uycg4v1G5KRsjLSOV_rkQ81dysO_j7i6ze_zSstaGAJWceun7_IO4OJwjryZVlHDg3M1WLuI33FrYwEtV47emz7oHxgjjCQ"; // Подставьте реальный токен
             document.getElementById('status').innerText = "Авторизация успешна. Токен получен.";
             logToConsole("Авторизация успешна. Токен получен.");
             document.getElementById('uploadButton').disabled = false; // Разблокировать кнопку загрузки видео
@@ -80,19 +81,19 @@
             }
 
             try {
-                // Запрашиваем популярные видео на YouTube
-                logToConsole("Запрос популярных видео с YouTube...");
-                const youtubeResponse = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&chart=mostPopular&regionCode=RU&videoCategoryId=0&type=video&key=AIzaSyAP6_WnY1mY2f-Wu-bmXucBt3ZKd15xUbE`);
+                // Запрашиваем случайное видео на YouTube
+                logToConsole("Запрос случайного видео с YouTube...");
+                const youtubeResponse = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=тема&maxResults=1&key=${youtubeApiKey}`);
                 const youtubeData = await youtubeResponse.json();
 
                 if (!youtubeData.items || youtubeData.items.length === 0) {
-                    throw new Error("Не удалось получить популярные видео с YouTube.");
+                    throw new Error("Не удалось получить видео с YouTube.");
                 }
 
-                const firstVideo = youtubeData.items[0]; // Берем первое видео
-                const videoTitle = firstVideo.snippet.title;
-                const videoDescription = firstVideo.snippet.description;
-                const videoUrl = `https://www.youtube.com/watch?v=${firstVideo.id.videoId}`;
+                const randomVideo = youtubeData.items[0]; // Берем случайное видео
+                const videoTitle = randomVideo.snippet.title;
+                const videoDescription = randomVideo.snippet.description;
+                const videoUrl = `https://www.youtube.com/watch?v=${randomVideo.id.videoId}`;
 
                 logToConsole(`Видео для загрузки: ${videoTitle}`);
 
