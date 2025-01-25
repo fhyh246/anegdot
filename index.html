@@ -3,150 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VK Video Uploader</title>
+    <title>Проверка ссылок на фотографии с использованием прокси</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            margin: 0;
-            padding: 20px;
+            margin: 20px;
         }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        button {
-            width: 100%;
-            padding: 10px;
+        input, button {
             margin: 10px 0;
-            border: none;
-            background-color: #4CAF50;
+            padding: 10px;
+            font-size: 16px;
+        }
+        .link {
+            margin: 5px 0;
+            padding: 5px;
+            display: inline-block;
+            width: 100%;
+        }
+        .exists {
             color: white;
+            background-color: green;
+        }
+        .not-exists {
+            color: white;
+            background-color: red;
+        }
+
+        /* Стили для кнопки с надписью "пизда" */
+        .custom-button {
+            background-color: #4CAF50; /* Зеленый фон */
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
             font-size: 16px;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        input {
-            width: 100%;
-            padding: 10px;
             margin: 10px 0;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            font-size: 16px;
+            cursor: pointer;
+            border-radius: 8px;
         }
-        #console {
-            background-color: #222;
-            color: #fff;
-            padding: 10px;
-            height: 200px;
-            overflow-y: auto;
-            font-family: monospace;
-            margin-top: 20px;
+
+        .custom-button:hover {
+            background-color: #45a049; /* Темный зеленый при наведении */
         }
     </style>
 </head>
 <body>
-
-    <div class="container">
-        <h1>VK YouTube Video Uploader</h1>
-        <label for="playlistId">Введите ID плейлиста VK:</label>
-        <input type="text" id="playlistId" placeholder="Пример: 1024403723_1">
-        <button id="getRandomVideoBtn">Загрузить случайное видео</button>
-        <button id="uploadToVKBtn" disabled>Загрузить в VK Playlist</button>
-        <div id="console"></div>
-    </div>
-
+    <h1>Проверка ссылок на фотографии с использованием прокси</h1>
+    <p>Нажмите кнопку, чтобы сгенерировать и проверить существование страниц с использованием нескольких прокси-серверов.</p>
+    
+    <label for="count">Количество генерируемых ссылок:</label><br>
+    <input type="number" id="count" value="500" style="width: 100%;"><br>
+    
+    <button onclick="generateAndCheckLinks()">Сгенерировать и проверить ссылки</button>
+    
+    <!-- Кнопка с надписью "пизда" -->
+    <button class="custom-button">Пизда</button>
+    
+    <h2>Сгенерированные ссылки:</h2>
+    <div id="links-container"></div>
+    
     <script>
-        const youtubeAPIKey = 'AIzaSyAP6_WnY1mY2f-Wu-bmXucBt3ZKd15xUbE'; // Your YouTube API Key
-        const vkAccessToken = 'vk1.a.ZozFqNJORej3Db-7By7jcfHZi-yJfY_tDViMKaS_6yEadeb3RwW2bQnlsw8j57zs54JIECcdUQZAROcmEzSh-52Hb9QS3WJ-O0flvspESlsZnb37Ye7UZgYqtQaVHTyVdbrGk3gjeztLpAtcHKtz7s_lczG6tQnWnnebPpGeYl6vPrisKawdiaAhcgZte24DV_a-M7yyq7l-OBLQXCuWWw'; // Your VK access token
+        // Прокси-серверы
+        const proxyList = [
+            "http://208.75.97.97:8080",
+            "http://200.89.178.2:3128",
+            "http://185.2.7.25:8080",
+            "http://47.74.9.20:8080",
+            "http://123.456.789.10:8080" // Замените на рабочие прокси
+        ];
 
-        function logToConsole(message) {
-            const consoleElement = document.getElementById('console');
-            consoleElement.textContent += message + '\n';
-            consoleElement.scrollTop = consoleElement.scrollHeight; // Scroll to bottom
-        }
-
-        async function fetchRandomYouTubeVideo() {
+        // Проверка доступности ссылки
+        async function checkLink(url, proxy) {
             try {
-                logToConsole("Запрос случайного видео с YouTube...");
-                const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&order=viewCount&type=video&videoEmbeddable=true&key=${youtubeAPIKey}`);
-                const data = await response.json();
-                
-                if (data.items && data.items.length > 0) {
-                    const video = data.items[0];
-                    logToConsole(`Найдено видео: ${video.snippet.title}`);
-                    return video.id.videoId;
-                } else {
-                    logToConsole("Видео не найдено!");
-                }
+                const response = await fetch(url, { 
+                    method: 'HEAD',
+                    mode: 'no-cors', // Это помогает избежать проблемы с CORS, но может ограничивать работу
+                    headers: {
+                        'X-Forwarded-For': proxy
+                    }
+                });
+                return response.ok; // true если код состояния 200-299
             } catch (error) {
-                logToConsole("Ошибка при получении видео: " + error);
+                return false; // Если запрос не удался
             }
         }
 
-        async function uploadToVK(videoId) {
-            const playlistId = document.getElementById('playlistId').value; // Получаем ID плейлиста из поля ввода
-            if (!playlistId) {
-                logToConsole("Ошибка: Укажите ID плейлиста!");
+        // Генерация и проверка ссылок
+        async function generateAndCheckLinks() {
+            const baseUrl = "https://biit39.ru/";
+            const count = parseInt(document.getElementById("count").value);
+            const linksContainer = document.getElementById("links-container");
+
+            if (isNaN(count) || count <= 0) {
+                alert("Пожалуйста, введите допустимое число!");
                 return;
             }
 
-            try {
-                logToConsole("Загрузка видео в VK...");
+            linksContainer.innerHTML = ""; // Очистить предыдущие результаты
 
-                const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-                const response = await fetch('https://api.vk.com/method/video.save', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        access_token: vkAccessToken,
-                        v: '5.131',
-                        playlist_id: playlistId,
-                        name: 'YouTube Video',
-                        description: 'Случайное видео с YouTube',
-                        link: videoUrl
-                    })
-                });
-                const data = await response.json();
+            const promises = [];
+            for (let i = 0; i < count; i++) {
+                const randomDigits = Math.floor(1000000000 + Math.random() * 9000000000); // 10 случайных цифр
+                const url = `${baseUrl}${randomDigits}`;
+                const proxy = proxyList[i % proxyList.length]; // Используем прокси по кругу
 
-                if (data.response) {
-                    logToConsole(`Видео успешно загружено в плейлист VK: ${data.response.title}`);
-                } else {
-                    logToConsole("Ошибка при загрузке видео в VK!");
-                }
-            } catch (error) {
-                logToConsole("Ошибка при загрузке видео в VK: " + error);
+                // Создаем элемент ссылки
+                const linkElement = document.createElement("div");
+                linkElement.className = "link";
+                linkElement.textContent = url;
+                linksContainer.appendChild(linkElement);
+
+                // Добавляем промис для проверки ссылки
+                promises.push(checkLink(url, proxy).then((exists) => {
+                    linkElement.classList.add(exists ? "exists" : "not-exists");
+                }));
             }
+
+            // Ожидаем завершения всех проверок
+            await Promise.all(promises);
         }
-
-        document.getElementById('getRandomVideoBtn').addEventListener('click', async () => {
-            const videoId = await fetchRandomYouTubeVideo();
-            if (videoId) {
-                document.getElementById('uploadToVKBtn').disabled = false;
-                document.getElementById('uploadToVKBtn').onclick = () => uploadToVK(videoId);
-            }
-        });
-
-        document.getElementById('uploadToVKBtn').addEventListener('click', async () => {
-            const videoId = await fetchRandomYouTubeVideo();
-            if (videoId) {
-                await uploadToVK(videoId);
-            }
-        });
     </script>
-
 </body>
 </html>
