@@ -37,6 +37,14 @@
         button:hover {
             background-color: #45a049;
         }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
         #console {
             background-color: #222;
             color: #fff;
@@ -52,6 +60,8 @@
 
     <div class="container">
         <h1>VK YouTube Video Uploader</h1>
+        <label for="playlistId">Введите ID плейлиста VK:</label>
+        <input type="text" id="playlistId" placeholder="Пример: 1024403723_1">
         <button id="getRandomVideoBtn">Загрузить случайное видео</button>
         <button id="uploadToVKBtn" disabled>Загрузить в VK Playlist</button>
         <div id="console"></div>
@@ -60,7 +70,6 @@
     <script>
         const youtubeAPIKey = 'AIzaSyAP6_WnY1mY2f-Wu-bmXucBt3ZKd15xUbE'; // Your YouTube API Key
         const vkAccessToken = 'vk1.a.ZozFqNJORej3Db-7By7jcfHZi-yJfY_tDViMKaS_6yEadeb3RwW2bQnlsw8j57zs54JIECcdUQZAROcmEzSh-52Hb9QS3WJ-O0flvspESlsZnb37Ye7UZgYqtQaVHTyVdbrGk3gjeztLpAtcHKtz7s_lczG6tQnWnnebPpGeYl6vPrisKawdiaAhcgZte24DV_a-M7yyq7l-OBLQXCuWWw'; // Your VK access token
-        const playlistId = '1024403723_1'; // Your VK Playlist ID
 
         function logToConsole(message) {
             const consoleElement = document.getElementById('console');
@@ -87,6 +96,12 @@
         }
 
         async function uploadToVK(videoId) {
+            const playlistId = document.getElementById('playlistId').value; // Получаем ID плейлиста из поля ввода
+            if (!playlistId) {
+                logToConsole("Ошибка: Укажите ID плейлиста!");
+                return;
+            }
+
             try {
                 logToConsole("Загрузка видео в VK...");
 
