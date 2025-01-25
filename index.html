@@ -1,217 +1,91 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Сканер QR-Кодов с Камеры</title>
-  <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script> <!-- Для сканирования с фото -->
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin-top: 20px;
-    }
-    #scanner-container {
-      width: 100%;
-      height: 300px;
-      margin-bottom: 20px;
-    }
-    #results {
-      margin-top: 20px;
-    }
-    table {
-      width: 80%;
-      margin: 20px auto;
-      border-collapse: collapse;
-    }
-    table, th, td {
-      border: 1px solid #000;
-    }
-    th, td {
-      padding: 10px;
-      text-align: left;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Проверка ссылок на фото</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        ul {
+            margin-top: 20px;
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            margin: 5px 0;
+        }
+        .working {
+            color: green;
+            font-weight: bold;
+        }
+        .not-working {
+            color: red;
+        }
+    </style>
 </head>
 <body>
+    <h1>Проверка рабочих ссылок</h1>
+    <p>Нажмите на кнопку, чтобы проверить ссылки. Отобразятся первые 10 рабочих ссылок.</p>
+    <button id="generate">Начать проверку</button>
+    <ul id="results"></ul>
 
-  <h1>Сканер QR-Кодов с Камеры</h1>
-  
-  <!-- Кнопка для активации камеры и сканирования -->
-  <button id="startScanBtn" onclick="startScanner()">Сканировать QR-код</button>
-  <button id="takePhotoBtn" onclick="takePhoto()" style="display: none;">Сделать фото</button>
-  
-  <!-- Контейнер для сканера камеры -->
-  <div id="scanner-container">
-    <video id="video" width="100%" height="300px" autoplay></video>
-  </div>
-  
-  <h2>Добавить товар</h2>
-  <label for="productGroup">Группа:</label>
-  <select id="productGroup">
-    <option value="нал">Нал</option>
-    <option value="безнал">Безнал</option>
-  </select><br><br>
-
-  <label for="productName">Название товара:</label>
-  <input type="text" id="productName" placeholder="Введите название товара" readonly><br><br>
-
-  <label for="productQuantity">Количество:</label>
-  <input type="number" id="productQuantity" placeholder="Введите количество" readonly><br><br>
-
-  <label for="productPrice">Цена:</label>
-  <input type="number" id="productPrice" placeholder="Введите цену" readonly><br><br>
-
-  <button onclick="addProduct()">Добавить товар</button>
-
-  <!-- Таблица с товарами -->
-  <h2>Список товаров</h2>
-  <table id="productsTable">
-    <thead>
-      <tr>
-        <th>Группа</th>
-        <th>Название</th>
-        <th>Количество</th>
-        <th>Цена</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Данные товаров будут отображаться здесь -->
-    </tbody>
-  </table>
-
-  <script>
-    let scannerStarted = false;
-    const videoElement = document.getElementById("video");
-    const startScanBtn = document.getElementById("startScanBtn");
-    const takePhotoBtn = document.getElementById("takePhotoBtn");
-
-    let currentStream;
-
-    // Функция для начала сканирования
-    function startScanner() {
-      if (!scannerStarted) {
-        scannerStarted = true;
-        startScanBtn.innerText = "Остановить сканирование";
-        takePhotoBtn.style.display = "block"; // Показываем кнопку "Сделать фото"
-
-        // Запрос разрешения на доступ к камере
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-          .then(function(stream) {
-            currentStream = stream;
-            videoElement.srcObject = stream;
-            scanQRCode();
-          })
-          .catch(function(err) {
-            console.log("Ошибка доступа к камере:", err);
-            alert("Не удалось получить доступ к камере.");
-          });
-      } else {
-        stopScanner();
-      }
-    }
-
-    // Функция для остановки сканирования
-    function stopScanner() {
-      if (currentStream) {
-        let tracks = currentStream.getTracks();
-        tracks.forEach(track => track.stop());
-      }
-      scannerStarted = false;
-      startScanBtn.innerText = "Сканировать QR-код";
-      takePhotoBtn.style.display = "none";
-      console.log("Сканер остановлен");
-    }
-
-    // Функция для сканирования QR-кода
-    function scanQRCode() {
-      if (!scannerStarted) return;
-
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
-
-      // Устанавливаем размеры канваса
-      canvas.width = videoElement.videoWidth;
-      canvas.height = videoElement.videoHeight;
-
-      // Рисуем текущий кадр с видео на канвасе
-      context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-
-      // Пробуем найти QR-код на изображении
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, canvas.width, canvas.height);
-
-      if (code) {
-        console.log("QR-код найден: ", code.data);
-        try {
-          const productData = JSON.parse(code.data); // Предполагаем, что QR-код содержит данные в формате JSON
-          document.getElementById("productName").value = productData.name || "";
-          document.getElementById("productQuantity").value = productData.quantity || "";
-          document.getElementById("productPrice").value = productData.price || "";
-        } catch (e) {
-          console.error("Ошибка при обработке QR-кода:", e);
+    <script>
+        async function checkLink(url) {
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                return response.ok; // Возвращает true, если ссылка работает
+            } catch (error) {
+                return false;
+            }
         }
-      }
 
-      // Продолжаем сканировать
-      requestAnimationFrame(scanQRCode);
-    }
+        async function generateLinks() {
+            const baseURL = "https://xxfot.com/photo/"; // Основа ссылки
+            const results = document.getElementById("results");
+            results.innerHTML = ""; // Очищаем список перед новой проверкой
+            let foundLinks = 0; // Счетчик рабочих ссылок
+            const maxLinks = 10; // Количество рабочих ссылок для отображения
 
-    // Функция для захвата фотографии
-    function takePhoto() {
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
-      
-      canvas.width = videoElement.videoWidth;
-      canvas.height = videoElement.videoHeight;
+            for (let i = 1; i <= 1000; i++) { // Подбор ID от 1 до 1000
+                if (foundLinks >= maxLinks) break; // Останавливаемся, когда нашли нужное количество ссылок
 
-      // Рисуем изображение с камеры на канвас
-      context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+                const url = `${baseURL}${i}`;
+                const isValid = await checkLink(url);
 
-      // Пробуем сканировать QR-код с фото
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, canvas.width, canvas.height);
+                const listItem = document.createElement("li");
+                listItem.textContent = url;
 
-      if (code) {
-        console.log("QR-код найден: ", code.data);
-        try {
-          const productData = JSON.parse(code.data); // Предполагаем, что QR-код содержит данные в формате JSON
-          document.getElementById("productName").value = productData.name || "";
-          document.getElementById("productQuantity").value = productData.quantity || "";
-          document.getElementById("productPrice").value = productData.price || "";
-        } catch (e) {
-          console.error("Ошибка при обработке QR-кода:", e);
+                if (isValid) {
+                    listItem.className = "working";
+                    foundLinks++;
+                } else {
+                    listItem.className = "not-working";
+                }
+
+                results.appendChild(listItem);
+
+                // Прекращаем, если нашли 10 рабочих ссылок
+                if (foundLinks === maxLinks) break;
+            }
+
+            if (foundLinks === 0) {
+                const noResults = document.createElement("li");
+                noResults.textContent = "Не удалось найти рабочие ссылки.";
+                noResults.className = "not-working";
+                results.appendChild(noResults);
+            }
         }
-      } else {
-        alert("QR-код не найден на фото.");
-      }
-    }
 
-    // Функция добавления товара в таблицу
-    function addProduct() {
-      const name = document.getElementById("productName").value;
-      const quantity = document.getElementById("productQuantity").value;
-      const price = document.getElementById("productPrice").value;
-      const group = document.getElementById("productGroup").value;
-
-      if (name && quantity && price) {
-        const table = document.getElementById("productsTable").getElementsByTagName("tbody")[0];
-        const row = table.insertRow();
-
-        row.insertCell(0).textContent = group;
-        row.insertCell(1).textContent = name;
-        row.insertCell(2).textContent = quantity;
-        row.insertCell(3).textContent = price;
-
-        // Очистка формы после добавления
-        document.getElementById("productName").value = '';
-        document.getElementById("productQuantity").value = '';
-        document.getElementById("productPrice").value = '';
-      } else {
-        alert("Пожалуйста, заполните все поля.");
-      }
-    }
-  </script>
-
+        document.getElementById("generate").addEventListener("click", generateLinks);
+    </script>
 </body>
 </html>
