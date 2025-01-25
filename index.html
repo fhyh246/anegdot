@@ -82,7 +82,7 @@
             try {
                 // Запрашиваем популярные видео на YouTube
                 logToConsole("Запрос популярных видео с YouTube...");
-                const youtubeResponse = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&chart=mostPopular&regionCode=RU&videoCategoryId=0&type=video&key=ВАШ_API_КЛЮЧ`);
+                const youtubeResponse = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&chart=mostPopular&regionCode=RU&videoCategoryId=0&type=video&key=AIzaSyAP6_WnY1mY2f-Wu-bmXucBt3ZKd15xUbE`);
                 const youtubeData = await youtubeResponse.json();
 
                 if (!youtubeData.items || youtubeData.items.length === 0) {
