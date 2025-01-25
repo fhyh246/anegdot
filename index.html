@@ -8,45 +8,38 @@
 <body>
     <h1>Авторизация через ВКонтакте и загрузка видео</h1>
 
-    <!-- Поле для ввода ID группы -->
     <div>
         <label for="groupIdInput">Введите ID группы:</label>
         <input type="text" id="groupIdInput" placeholder="Пример: 123456789">
         <button onclick="saveGroupId()">Сохранить ID группы</button>
     </div>
 
-    <!-- Кнопка авторизации -->
     <div style="margin-top: 20px;">
         <button id="authButton" onclick="startAuth()">Авторизоваться через ВКонтакте</button>
     </div>
 
-    <!-- Кнопка для загрузки видео -->
     <div style="margin-top: 20px;">
         <button id="uploadButton" onclick="uploadVideo()" disabled>Загрузить видео</button>
     </div>
 
-    <!-- Поле для отображения статуса -->
     <div id="status" style="margin-top: 20px; color: red;"></div>
 
-    <!-- Консоль для логирования -->
     <div style="margin-top: 20px; padding: 10px; background: #f4f4f4; border: 1px solid #ddd;">
         <h3>Консоль:</h3>
         <pre id="consoleLog" style="max-height: 200px; overflow-y: auto; background: #000; color: #0f0; padding: 10px;"></pre>
     </div>
 
     <script>
-        let groupId = ''; // ID группы
-        let accessToken = ''; // Токен пользователя
-        let youtubeApiKey = 'AIzaSyAP6_WnY1mY2f-Wu-bmXucBt3ZKd15xUbE'; // Ваш YouTube API ключ
+        let groupId = ''; 
+        let accessToken = ''; 
+        let youtubeApiKey = 'AIzaSyAP6_WnY1mY2f-Wu-bmXucBt3ZKd15xUbE';
 
-        // Функция для вывода в консоль
         function logToConsole(message) {
             const consoleElement = document.getElementById('consoleLog');
             consoleElement.innerText += message + "\n";
-            consoleElement.scrollTop = consoleElement.scrollHeight; // Прокрутка вниз
+            consoleElement.scrollTop = consoleElement.scrollHeight;
         }
 
-        // Сохранение ID группы
         function saveGroupId() {
             const input = document.getElementById('groupIdInput').value.trim();
             if (input) {
@@ -59,19 +52,14 @@
             }
         }
 
-        // Запуск авторизации
         function startAuth() {
             logToConsole("Запуск авторизации...");
-
-            // Здесь должен быть вызов авторизации (например, через VKID SDK или OAuth)
-            // В примере предполагается, что токен уже будет получен после успешной авторизации.
-            accessToken = "vk1.a.gHSaXmdTg09tetrGXSU2Y0vh5LL0m4RIAeCZqypgp_bNkLydy850nopp02JNjjsXuy2B4jKynySRb1klvy-5xsxFfzAqa9CfvG7EjRZEQnDAdm_dBpA0px4Uycg4v1G5KRsjLSOV_rkQ81dysO_j7i6ze_zSstaGAJWceun7_IO4OJwjryZVlHDg3M1WLuI33FrYwEtV47emz7oHxgjjCQ"; // Подставьте реальный токен
+            accessToken = "vk1.a.gHSaXmdTg09tetrGXSU2Y0vh5LL0m4RIAeCZqypgp_bNkLydy850nopp02JNjjsXuy2B4jKynySRb1klvy-5xsxFfzAqa9CfvG7EjRZEQnDAdm_dBpA0px4Uycg4v1G5KRsjLSOV_rkQ81dysO_j7i6ze_zSstaGAJWceun7_IO4OJwjryZVlHDg3M1WLuI33FrYwEtV47emz7oHxgjjCQ";
             document.getElementById('status').innerText = "Авторизация успешна. Токен получен.";
             logToConsole("Авторизация успешна. Токен получен.");
-            document.getElementById('uploadButton').disabled = false; // Разблокировать кнопку загрузки видео
+            document.getElementById('uploadButton').disabled = false;
         }
 
-        // Функция загрузки видео
         async function uploadVideo() {
             logToConsole("Начало загрузки видео...");
             if (!groupId || !accessToken) {
@@ -81,7 +69,6 @@
             }
 
             try {
-                // Запрашиваем случайное видео на YouTube
                 logToConsole("Запрос случайного видео с YouTube...");
                 const youtubeResponse = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=тема&maxResults=1&key=${youtubeApiKey}`);
                 const youtubeData = await youtubeResponse.json();
@@ -90,14 +77,13 @@
                     throw new Error("Не удалось получить видео с YouTube.");
                 }
 
-                const randomVideo = youtubeData.items[0]; // Берем случайное видео
+                const randomVideo = youtubeData.items[0];
                 const videoTitle = randomVideo.snippet.title;
                 const videoDescription = randomVideo.snippet.description;
                 const videoUrl = `https://www.youtube.com/watch?v=${randomVideo.id.videoId}`;
 
                 logToConsole(`Видео для загрузки: ${videoTitle}`);
 
-                // Получаем ссылку для загрузки видео в ВК
                 logToConsole("Запрос ссылки для загрузки видео в ВК...");
                 const saveResponse = await fetch(`https://api.vk.com/method/video.save?group_id=${groupId}&name=${encodeURIComponent(videoTitle)}&description=${encodeURIComponent(videoDescription)}&v=5.131&access_token=${accessToken}`);
                 const saveData = await saveResponse.json();
@@ -109,10 +95,12 @@
                 const uploadUrl = saveData.response.upload_url;
                 logToConsole("Ссылка для загрузки получена: " + uploadUrl);
 
-                // Загрузка видео на сервер ВКонтакте
-                logToConsole("Начало загрузки видео на сервер ВКонтакте...");
+                const fileData = await fetch(videoUrl);
+                const videoBlob = await fileData.blob();
+
+                logToConsole("Скачивание видео завершено. Начало загрузки на сервер ВКонтакте...");
                 const videoData = new FormData();
-                videoData.append("video_file", new Blob(["Ваш видео-файл"])); // Здесь нужно использовать реальный файл
+                videoData.append("video_file", videoBlob, videoTitle);
 
                 const uploadResponse = await fetch(uploadUrl, {
                     method: "POST",
