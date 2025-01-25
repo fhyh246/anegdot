@@ -6,7 +6,7 @@
     <title>Авторизация ВКонтакте и загрузка видео</title>
 </head>
 <body>
-    <h1>Авторизация через ВКонтакте</h1>
+    <h1>Авторизация через ВКонтакте и загрузка видео</h1>
 
     <!-- Поле для ввода ID группы -->
     <div>
@@ -15,28 +15,48 @@
         <button onclick="saveGroupId()">Сохранить ID группы</button>
     </div>
 
+    <!-- Кнопка авторизации -->
+    <div style="margin-top: 20px;">
+        <button id="authButton" onclick="startAuth()">Авторизоваться через ВКонтакте</button>
+    </div>
+
+    <!-- Кнопка для загрузки видео -->
+    <div style="margin-top: 20px;">
+        <button id="uploadButton" onclick="uploadVideo()" disabled>Загрузить видео</button>
+    </div>
+
     <!-- Поле для отображения статуса -->
     <div id="status" style="margin-top: 20px; color: red;"></div>
 
-    <!-- Floating One Tap -->
-    <div>
-        <script src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
-        <script type="text/javascript">
-            if ('VKIDSDK' in window) {
-                const VKID = window.VKIDSDK;
-                let groupId = ''; // ID группы
-                let accessToken = ''; // Токен пользователя
+    <script src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
+    <script type="text/javascript">
+        if ('VKIDSDK' in window) {
+            const VKID = window.VKIDSDK;
+            let groupId = ''; // ID группы
+            let accessToken = ''; // Токен пользователя
 
-                // Инициализация VKID SDK
-                VKID.Config.init({
-                    app: 52966542, // ID приложения
-                    redirectUrl: 'https://fhyh246.github.io/anegdot/', // URL редиректа
-                    responseMode: VKID.ConfigResponseMode.Callback,
-                    source: VKID.ConfigSource.LOWCODE,
-                    scope: 'video,groups,offline', // Запрашиваемые доступы
-                });
+            // Инициализация VKID SDK
+            VKID.Config.init({
+                app: 52966542, // ID приложения
+                redirectUrl: 'https://fhyh246.github.io/anegdot/', // URL редиректа
+                responseMode: VKID.ConfigResponseMode.Callback,
+                source: VKID.ConfigSource.LOWCODE,
+                scope: 'video,groups,offline', // Запрашиваемые доступы
+            });
 
-                // Floating One Tap
+            // Сохранение ID группы
+            function saveGroupId() {
+                const input = document.getElementById('groupIdInput').value.trim();
+                if (input) {
+                    groupId = input;
+                    document.getElementById('status').innerText = "ID группы сохранен: " + groupId;
+                } else {
+                    document.getElementById('status').innerText = "Введите корректный ID группы.";
+                }
+            }
+
+            // Запуск авторизации
+            function startAuth() {
                 const floatingOneTap = new VKID.FloatingOneTap();
 
                 floatingOneTap.render({
@@ -52,61 +72,61 @@
                         .then(vkidOnSuccess)
                         .catch(vkidOnError);
                 });
+            }
 
-                // OAuth List
-                const oAuth = new VKID.OAuthList();
+            // Успешная авторизация
+            function vkidOnSuccess(data) {
+                console.log("Успешная авторизация:", data);
+                accessToken = data.access_token;
+                document.getElementById('status').innerText = "Авторизация успешна. Токен получен.";
+                document.getElementById('uploadButton').disabled = false; // Разблокировать кнопку загрузки видео
+            }
 
-                oAuth.render({
-                    container: document.currentScript.parentElement,
-                    oauthList: ['vkid']
-                })
-                .on(VKID.WidgetEvents.ERROR, vkidOnError)
-                .on(VKID.OAuthListInternalEvents.LOGIN_SUCCESS, function (payload) {
-                    const code = payload.code;
-                    const deviceId = payload.device_id;
+            // Обработка ошибок авторизации
+            function vkidOnError(error) {
+                console.error("Ошибка авторизации:", error);
+                document.getElementById('status').innerText = "Ошибка авторизации. Проверьте настройки.";
+            }
 
-                    VKID.Auth.exchangeCode(code, deviceId)
-                        .then(vkidOnSuccess)
-                        .catch(vkidOnError);
-                });
-
-                // Сохранение ID группы
-                function saveGroupId() {
-                    const input = document.getElementById('groupIdInput').value.trim();
-                    if (input) {
-                        groupId = input;
-                        document.getElementById('status').innerText = "ID группы сохранен: " + groupId;
-                    } else {
-                        document.getElementById('status').innerText = "Введите корректный ID группы.";
-                    }
+            // Функция загрузки видео
+            async function uploadVideo() {
+                if (!groupId || !accessToken) {
+                    document.getElementById('status').innerText = "Введите ID группы и авторизуйтесь.";
+                    return;
                 }
 
-                // Успешная авторизация
-                function vkidOnSuccess(data) {
-                    floatingOneTap.close();
-                    console.log("Успешная авторизация:", data);
-                    accessToken = data.access_token;
-                    document.getElementById('status').innerText = "Авторизация успешна. Токен получен.";
-                }
+                try {
+                    // 1. Получить ссылку для загрузки
+                    const saveResponse = await fetch(`https://api.vk.com/method/video.save?group_id=${groupId}&name=Название+видео&description=Описание+видео&v=5.131&access_token=${accessToken}`);
+                    const saveData = await saveResponse.json();
 
-                // Обработка ошибок
-                function vkidOnError(error) {
-                    console.error("Ошибка авторизации:", error);
-                    document.getElementById('status').innerText = "Ошибка авторизации. Проверьте настройки.";
-                }
-
-                // Заглушка для загрузки видео
-                function startVideoUpload() {
-                    if (!groupId || !accessToken) {
-                        document.getElementById('status').innerText = "Введите ID группы и авторизуйтесь.";
-                        return;
+                    if (saveData.error) {
+                        throw new Error("Ошибка VK API: " + saveData.error.error_msg);
                     }
 
-                    console.log("Начало загрузки видео. Группа:", groupId, "Токен:", accessToken);
-                    // Здесь добавить логику загрузки видео
+                    const uploadUrl = saveData.response.upload_url;
+
+                    // 2. Загрузить видео по полученной ссылке
+                    const videoData = new FormData();
+                    videoData.append("video_file", new Blob(["Ваш файл видео"])); // Замените на настоящий файл
+
+                    const uploadResponse = await fetch(uploadUrl, {
+                        method: "POST",
+                        body: videoData,
+                    });
+
+                    if (!uploadResponse.ok) {
+                        throw new Error("Ошибка загрузки видео.");
+                    }
+
+                    // 3. Вывести успех
+                    document.getElementById('status').innerText = "Видео успешно загружено в группу!";
+                } catch (error) {
+                    console.error("Ошибка при загрузке видео в VK:", error);
+                    document.getElementById('status').innerText = "Ошибка при загрузке видео: " + error.message;
                 }
             }
-        </script>
-    </div>
+        }
+    </script>
 </body>
 </html>
