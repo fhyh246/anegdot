@@ -1,127 +1,91 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Смена IP и проверка ссылок</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        button {
-            padding: 10px 20px;
-            margin: 5px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        ul {
-            margin-top: 20px;
-            list-style: none;
-            padding: 0;
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid #ccc;
-        }
-        li {
-            margin: 5px 0;
-        }
-        .working {
-            color: green;
-            font-weight: bold;
-        }
-        .not-working {
-            color: red;
-        }
-    </style>
+    <title>Автозагрузка видео из YouTube в ВКонтакте</title>
+    <script src="https://vk.com/js/api/openapi.js?169" type="text/javascript"></script>
 </head>
 <body>
-    <h1>Проверка ссылок с изменением IP</h1>
-    <button id="start">Начать проверку</button>
-    <button id="stop" disabled>Остановить</button>
-    <ul id="results"></ul>
 
-    <script>
-        let isRunning = false;
-        const proxies = [
-            'http://200.55.249.135:80',    // Эквадор, Мачала
-            'https://182.53.245.241:443',  // Таиланд, Чантхабури
-            'socks4://213.197.136.218:1080', // Литва, Вильнюс
-            'socks5://23.227.199.108:1080', // США, Чикаго
-        ];
+<h1>Автоматическая загрузка видео из YouTube в ВКонтакте</h1>
 
-        // Функция для генерации случайного идентификатора
-        function generateRandomId() {
-            const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-            let result = "GALL_";
-            for (let i = 0; i < 22; i++) {
-                result += characters.charAt(Math.floor(Math.random() * characters.length));
-            }
-            return result;
+<!-- Форма для ввода данных -->
+<form id="videoForm">
+    <label for="vkGroupId">ID группы ВКонтакте:</label>
+    <input type="text" id="vkGroupId" placeholder="Введите ID группы" required><br><br>
+
+    <label for="searchQuery">Поиск на YouTube:</label>
+    <input type="text" id="searchQuery" placeholder="Поиск видео (например, 'cat')" required><br><br>
+
+    <button type="submit">Загрузить видео</button>
+</form>
+
+<div id="status"></div>
+
+<script>
+// Ваши токены
+const vkAccessToken = 'IHe6ft8lCipWzbnL4noD';  // Токен ВКонтакте
+const youtubeApiKey = 'AIzaSyBoKzOFupL2287jRbPsxjtgKH49';  // Токен YouTube
+
+// Функция для получения видео с YouTube
+function getYouTubeVideos(query, apiKey) {
+    const youtubeUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&key=${apiKey}`;
+    return fetch(youtubeUrl)
+        .then(response => response.json())
+        .then(data => {
+            const videoUrls = data.items.map(item => `https://www.youtube.com/watch?v=${item.id.videoId}`);
+            return videoUrls;
+        });
+}
+
+// Функция для публикации видео в ВКонтакте
+function postVideoToVK(videoUrl, accessToken, groupId) {
+    const vkUrl = 'https://api.vk.com/method/video.save';
+    const params = {
+        access_token: accessToken,
+        v: '5.131',
+        name: 'Video Title',  // Название видео
+        description: 'Video Description',  // Описание видео
+        group_id: groupId,
+        file_url: videoUrl  // Ссылка на видео
+    };
+
+    return fetch(vkUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(params)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.response) {
+            console.log(`Видео ${videoUrl} успешно загружено!`);
+            document.getElementById("status").innerText = 'Видео успешно загружено!';
+        } else {
+            console.log(`Ошибка при загрузке видео: ${result.error.error_msg}`);
+            document.getElementById("status").innerText = 'Ошибка при загрузке видео!';
         }
+    });
+}
 
-        // Функция для отправки запроса с прокси
-        async function checkLinkWithProxy(url, proxy) {
-            try {
-                const response = await fetch(url, {
-                    method: 'HEAD',
-                    headers: {
-                        'Proxy-Authorization': 'Basic ' + btoa('user:password') // Для прокси, требующих авторизации
-                    }
-                });
-                return response.ok;
-            } catch (error) {
-                return false;
-            }
-        }
+// Обработчик формы
+document.getElementById('videoForm').addEventListener('submit', function(event) {
+    event.preventDefault();
 
-        // Проверка ссылки с выбором прокси
-        async function continuousCheckWithProxy(threadId) {
-            const results = document.getElementById("results");
+    const vkGroupId = document.getElementById('vkGroupId').value;
+    const searchQuery = document.getElementById('searchQuery').value;
 
-            while (isRunning) {
-                const randomId = generateRandomId();
-                const url = `https://xxfot.com/${randomId}`;
-                const proxy = proxies[Math.floor(Math.random() * proxies.length)]; // Выбираем случайный прокси
+    // Получаем видео с YouTube
+    getYouTubeVideos(searchQuery, youtubeApiKey).then(videoUrls => {
+        videoUrls.forEach(videoUrl => {
+            // Загружаем видео в группу ВКонтакте
+            postVideoToVK(videoUrl, vkAccessToken, vkGroupId);
+        });
+    });
+});
+</script>
 
-                const isValid = await checkLinkWithProxy(url, proxy);
-
-                const listItem = document.createElement("li");
-                listItem.textContent = `Thread ${threadId}: ${url}`;
-
-                if (isValid) {
-                    listItem.className = "working";
-                } else {
-                    listItem.className = "not-working";
-                }
-
-                results.appendChild(listItem);
-                results.scrollTop = results.scrollHeight; // Прокрутка вниз для новых ссылок
-            }
-        }
-
-        // Функция для запуска проверки
-        function startChecking() {
-            isRunning = true;
-            document.getElementById("start").disabled = true;
-            document.getElementById("stop").disabled = false;
-
-            // Запускаем 500 потоков с прокси
-            for (let i = 0; i < 500; i++) {
-                continuousCheckWithProxy(i);
-            }
-        }
-
-        // Остановка проверки
-        function stopChecking() {
-            isRunning = false;
-            document.getElementById("start").disabled = false;
-            document.getElementById("stop").disabled = true;
-        }
-
-        // Добавляем обработчики кнопок
-        document.getElementById("start").addEventListener("click", startChecking);
-        document.getElementById("stop").addEventListener("click", stopChecking);
-    </script>
 </body>
 </html>
