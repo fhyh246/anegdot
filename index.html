@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Максимально быстрая проверка ссылок</title>
+    <title>Смена IP и проверка ссылок</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -36,57 +36,67 @@
     </style>
 </head>
 <body>
-    <h1>Максимально быстрая проверка ссылок</h1>
+    <h1>Проверка ссылок с изменением IP</h1>
     <button id="start">Начать проверку</button>
     <button id="stop" disabled>Остановить</button>
     <ul id="results"></ul>
 
     <script>
         let isRunning = false;
+        const proxies = [
+            'http://200.55.249.135:80',    // Эквадор, Мачала
+            'https://182.53.245.241:443',  // Таиланд, Чантхабури
+            'socks4://213.197.136.218:1080', // Литва, Вильнюс
+            'socks5://23.227.199.108:1080', // США, Чикаго
+        ];
 
         // Функция для генерации случайного идентификатора
         function generateRandomId() {
             const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-            let result = "GALL_"; // Начало идентификатора
-            for (let i = 0; i < 22; i++) { // Длина идентификатора 22 символа
+            let result = "GALL_";
+            for (let i = 0; i < 22; i++) {
                 result += characters.charAt(Math.floor(Math.random() * characters.length));
             }
             return result;
         }
 
-        // Проверка одной ссылки
-        async function checkLink(url) {
+        // Функция для отправки запроса с прокси
+        async function checkLinkWithProxy(url, proxy) {
             try {
-                const response = await fetch(url, { method: 'HEAD' });
-                return response.ok; // true, если ссылка рабочая
+                const response = await fetch(url, {
+                    method: 'HEAD',
+                    headers: {
+                        'Proxy-Authorization': 'Basic ' + btoa('user:password') // Для прокси, требующих авторизации
+                    }
+                });
+                return response.ok;
             } catch (error) {
                 return false;
             }
         }
 
-        // Постоянный поток проверки ссылок
-        async function continuousCheck() {
+        // Проверка ссылки с выбором прокси
+        async function continuousCheckWithProxy(threadId) {
             const results = document.getElementById("results");
 
             while (isRunning) {
                 const randomId = generateRandomId();
                 const url = `https://xxfot.com/${randomId}`;
+                const proxy = proxies[Math.floor(Math.random() * proxies.length)]; // Выбираем случайный прокси
 
-                checkLink(url).then((isValid) => {
-                    const listItem = document.createElement("li");
-                    listItem.textContent = url;
+                const isValid = await checkLinkWithProxy(url, proxy);
 
-                    if (isValid) {
-                        listItem.className = "working";
-                    } else {
-                        listItem.className = "not-working";
-                    }
+                const listItem = document.createElement("li");
+                listItem.textContent = `Thread ${threadId}: ${url}`;
 
-                    results.appendChild(listItem);
+                if (isValid) {
+                    listItem.className = "working";
+                } else {
+                    listItem.className = "not-working";
+                }
 
-                    // Прокрутка вниз для новых ссылок
-                    results.scrollTop = results.scrollHeight;
-                });
+                results.appendChild(listItem);
+                results.scrollTop = results.scrollHeight; // Прокрутка вниз для новых ссылок
             }
         }
 
@@ -96,9 +106,9 @@
             document.getElementById("start").disabled = true;
             document.getElementById("stop").disabled = false;
 
-            // Запускаем поток проверки
-            for (let i = 0; i < 500; i++) { // 500 потоков одновременно
-                continuousCheck();
+            // Запускаем 500 потоков с прокси
+            for (let i = 0; i < 500; i++) {
+                continuousCheckWithProxy(i);
             }
         }
 
