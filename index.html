@@ -39,11 +39,11 @@
         if ('VKIDSDK' in window) {
             const VKID = window.VKIDSDK;
             VKID.Config.init({
-                app: 52966542,
-                redirectUrl: 'https://fhyh246.github.io/anegdot/',
+                app: 52966542, // ID вашего приложения VK
+                redirectUrl: 'https://fhyh246.github.io/anegdot/', // Укажите URL-адрес, где размещено приложение
                 responseMode: VKID.ConfigResponseMode.Callback,
                 source: VKID.ConfigSource.LOWCODE,
-                scope: 'video,offline,photos',
+                scope: 'video,offline,photos', // Запрашиваемые доступы
             });
 
             const oneTap = new VKID.OneTap();
