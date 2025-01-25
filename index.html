@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Максимальная проверка ссылок</title>
+    <title>Максимально быстрая проверка ссылок</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -36,7 +36,7 @@
     </style>
 </head>
 <body>
-    <h1>Максимальная скорость проверки ссылок</h1>
+    <h1>Максимально быстрая проверка ссылок</h1>
     <button id="start">Начать проверку</button>
     <button id="stop" disabled>Остановить</button>
     <ul id="results"></ul>
@@ -65,7 +65,7 @@
         }
 
         // Постоянный поток проверки ссылок
-        async function continuousCheck(threadId) {
+        async function continuousCheck() {
             const results = document.getElementById("results");
 
             while (isRunning) {
@@ -74,7 +74,7 @@
 
                 checkLink(url).then((isValid) => {
                     const listItem = document.createElement("li");
-                    listItem.textContent = `Thread ${threadId}: ${url}`;
+                    listItem.textContent = url;
 
                     if (isValid) {
                         listItem.className = "working";
@@ -96,9 +96,9 @@
             document.getElementById("start").disabled = true;
             document.getElementById("stop").disabled = false;
 
-            // Запускаем 1000 потоков
-            for (let i = 0; i < 1000; i++) {
-                continuousCheck(i);
+            // Запускаем поток проверки
+            for (let i = 0; i < 500; i++) { // 500 потоков одновременно
+                continuousCheck();
             }
         }
 
