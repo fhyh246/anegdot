@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Проверка ссылок на фото</title>
+    <title>Генерация ссылок</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
-            padding: 20px;
         }
         button {
             padding: 10px 20px;
+            margin: 5px;
             font-size: 16px;
             cursor: pointer;
         }
@@ -33,32 +33,44 @@
     </style>
 </head>
 <body>
-    <h1>Проверка рабочих ссылок</h1>
-    <p>Нажмите на кнопку, чтобы проверить ссылки. Отобразятся первые 10 рабочих ссылок.</p>
-    <button id="generate">Начать проверку</button>
+    <h1>Проверка ссылок на фото</h1>
+    <button id="start">Начать проверку</button>
+    <button id="stop" disabled>Остановить</button>
     <ul id="results"></ul>
 
     <script>
+        let isRunning = false;
+
+        // Функция для генерации случайного идентификатора
+        function generateRandomId() {
+            const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            let result = "GALL_"; // Начало идентификатора
+            for (let i = 0; i < 22; i++) { // Длина идентификатора 22 символа
+                result += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            return result;
+        }
+
+        // Проверка ссылки
         async function checkLink(url) {
             try {
                 const response = await fetch(url, { method: 'HEAD' });
-                return response.ok; // Возвращает true, если ссылка работает
+                return response.ok; // true, если ссылка рабочая
             } catch (error) {
                 return false;
             }
         }
 
-        async function generateLinks() {
-            const baseURL = "https://xxfot.com/photo/"; // Основа ссылки
+        // Функция для запуска проверки
+        async function startChecking() {
+            isRunning = true;
+            document.getElementById("start").disabled = true;
+            document.getElementById("stop").disabled = false;
             const results = document.getElementById("results");
-            results.innerHTML = ""; // Очищаем список перед новой проверкой
-            let foundLinks = 0; // Счетчик рабочих ссылок
-            const maxLinks = 10; // Количество рабочих ссылок для отображения
 
-            for (let i = 1; i <= 1000; i++) { // Подбор ID от 1 до 1000
-                if (foundLinks >= maxLinks) break; // Останавливаемся, когда нашли нужное количество ссылок
-
-                const url = `${baseURL}${i}`;
+            while (isRunning) {
+                const randomId = generateRandomId();
+                const url = `https://xxfot.com/${randomId}`;
                 const isValid = await checkLink(url);
 
                 const listItem = document.createElement("li");
@@ -66,26 +78,27 @@
 
                 if (isValid) {
                     listItem.className = "working";
-                    foundLinks++;
                 } else {
                     listItem.className = "not-working";
                 }
 
                 results.appendChild(listItem);
 
-                // Прекращаем, если нашли 10 рабочих ссылок
-                if (foundLinks === maxLinks) break;
-            }
-
-            if (foundLinks === 0) {
-                const noResults = document.createElement("li");
-                noResults.textContent = "Не удалось найти рабочие ссылки.";
-                noResults.className = "not-working";
-                results.appendChild(noResults);
+                // Прокрутка вниз для новых ссылок
+                results.scrollTop = results.scrollHeight;
             }
         }
 
-        document.getElementById("generate").addEventListener("click", generateLinks);
+        // Остановка проверки
+        function stopChecking() {
+            isRunning = false;
+            document.getElementById("start").disabled = false;
+            document.getElementById("stop").disabled = true;
+        }
+
+        // Добавляем обработчики кнопок
+        document.getElementById("start").addEventListener("click", startChecking);
+        document.getElementById("stop").addEventListener("click", stopChecking);
     </script>
 </body>
 </html>
