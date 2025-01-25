@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Загрузка популярных видео</title>
+    <title>Автозагрузка видео в ВКонтакте</title>
 </head>
 <body>
-    <h1>Автоматическая загрузка видео с YouTube в ВКонтакте</h1>
+    <h1>Автозагрузка популярных видео с YouTube в ВКонтакте</h1>
     <label for="groupId">ID группы ВКонтакте:</label>
     <input type="text" id="groupId" placeholder="Введите ID группы">
     <button id="startUpload">Начать загрузку</button>
     <div id="status"></div>
 
     <script>
-        const youtubeApiKey = "AIzaSyBoKzOFupL2287jRbPsxjtgKH49";
-        const vkServiceToken = "ecc5b84cecc5b84cecc5b84cc0efed8c2ceecc5ecc5b84c8b511ddeeea5a3e19c4dd83b";
+        const youtubeApiKey = "AIzaSyAP6_WnY1mY2f-Wu-bmXucBt3ZKd15xUbE"; // Ключ API YouTube
+        const vkServiceToken = "ecc5b84cecc5b84cecc5b84cc0efed8c2ceecc5ecc5b84c8b511ddeeea5a3e19c4dd83b"; // Ваш токен ВКонтакте
 
         document.getElementById('startUpload').addEventListener('click', async () => {
             const groupId = document.getElementById('groupId').value.trim();
@@ -27,7 +27,7 @@
 
             try {
                 // 1. Получаем список популярных русскоязычных видео с YouTube
-                const youtubeResponse = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&regionCode=RU&videoCategoryId=0&maxResults=10&key=${youtubeApiKey}`);
+                const youtubeResponse = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&regionCode=RU&maxResults=10&key=${youtubeApiKey}`);
                 const youtubeData = await youtubeResponse.json();
 
                 if (youtubeData.error) {
