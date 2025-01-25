@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Генерация ссылок</title>
+    <title>Быстрая проверка ссылок</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -19,6 +19,9 @@
             margin-top: 20px;
             list-style: none;
             padding: 0;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
         }
         li {
             margin: 5px 0;
@@ -33,7 +36,7 @@
     </style>
 </head>
 <body>
-    <h1>Проверка ссылок на фото</h1>
+    <h1>Быстрая проверка ссылок на фото</h1>
     <button id="start">Начать проверку</button>
     <button id="stop" disabled>Остановить</button>
     <ul id="results"></ul>
@@ -51,7 +54,7 @@
             return result;
         }
 
-        // Проверка ссылки
+        // Проверка одной ссылки
         async function checkLink(url) {
             try {
                 const response = await fetch(url, { method: 'HEAD' });
@@ -61,31 +64,45 @@
             }
         }
 
+        // Параллельная проверка группы ссылок
+        async function checkMultipleLinks(batchSize) {
+            const promises = [];
+            const results = document.getElementById("results");
+
+            for (let i = 0; i < batchSize; i++) {
+                const randomId = generateRandomId();
+                const url = `https://xxfot.com/${randomId}`;
+                promises.push(
+                    checkLink(url).then((isValid) => {
+                        const listItem = document.createElement("li");
+                        listItem.textContent = url;
+
+                        if (isValid) {
+                            listItem.className = "working";
+                        } else {
+                            listItem.className = "not-working";
+                        }
+
+                        results.appendChild(listItem);
+
+                        // Прокрутка вниз для новых ссылок
+                        results.scrollTop = results.scrollHeight;
+                    })
+                );
+            }
+
+            await Promise.all(promises); // Ждем, пока все запросы завершатся
+        }
+
         // Функция для запуска проверки
         async function startChecking() {
             isRunning = true;
             document.getElementById("start").disabled = true;
             document.getElementById("stop").disabled = false;
-            const results = document.getElementById("results");
 
+            const batchSize = 100; // Количество запросов в одном "пакете"
             while (isRunning) {
-                const randomId = generateRandomId();
-                const url = `https://xxfot.com/${randomId}`;
-                const isValid = await checkLink(url);
-
-                const listItem = document.createElement("li");
-                listItem.textContent = url;
-
-                if (isValid) {
-                    listItem.className = "working";
-                } else {
-                    listItem.className = "not-working";
-                }
-
-                results.appendChild(listItem);
-
-                // Прокрутка вниз для новых ссылок
-                results.scrollTop = results.scrollHeight;
+                await checkMultipleLinks(batchSize);
             }
         }
 
