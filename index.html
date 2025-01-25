@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Быстрая проверка ссылок</title>
+    <title>Максимальная проверка ссылок</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -36,7 +36,7 @@
     </style>
 </head>
 <body>
-    <h1>Быстрая проверка ссылок на фото</h1>
+    <h1>Максимальная скорость проверки ссылок</h1>
     <button id="start">Начать проверку</button>
     <button id="stop" disabled>Остановить</button>
     <ul id="results"></ul>
@@ -64,45 +64,41 @@
             }
         }
 
-        // Параллельная проверка группы ссылок
-        async function checkMultipleLinks(batchSize) {
-            const promises = [];
+        // Постоянный поток проверки ссылок
+        async function continuousCheck(threadId) {
             const results = document.getElementById("results");
 
-            for (let i = 0; i < batchSize; i++) {
+            while (isRunning) {
                 const randomId = generateRandomId();
                 const url = `https://xxfot.com/${randomId}`;
-                promises.push(
-                    checkLink(url).then((isValid) => {
-                        const listItem = document.createElement("li");
-                        listItem.textContent = url;
 
-                        if (isValid) {
-                            listItem.className = "working";
-                        } else {
-                            listItem.className = "not-working";
-                        }
+                checkLink(url).then((isValid) => {
+                    const listItem = document.createElement("li");
+                    listItem.textContent = `Thread ${threadId}: ${url}`;
 
-                        results.appendChild(listItem);
+                    if (isValid) {
+                        listItem.className = "working";
+                    } else {
+                        listItem.className = "not-working";
+                    }
 
-                        // Прокрутка вниз для новых ссылок
-                        results.scrollTop = results.scrollHeight;
-                    })
-                );
+                    results.appendChild(listItem);
+
+                    // Прокрутка вниз для новых ссылок
+                    results.scrollTop = results.scrollHeight;
+                });
             }
-
-            await Promise.all(promises); // Ждем, пока все запросы завершатся
         }
 
         // Функция для запуска проверки
-        async function startChecking() {
+        function startChecking() {
             isRunning = true;
             document.getElementById("start").disabled = true;
             document.getElementById("stop").disabled = false;
 
-            const batchSize = 100; // Количество запросов в одном "пакете"
-            while (isRunning) {
-                await checkMultipleLinks(batchSize);
+            // Запускаем 1000 потоков
+            for (let i = 0; i < 1000; i++) {
+                continuousCheck(i);
             }
         }
 
