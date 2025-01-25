@@ -1,91 +1,112 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Автозагрузка видео из YouTube в ВКонтакте</title>
-    <script src="https://vk.com/js/api/openapi.js?169" type="text/javascript"></script>
+    <title>Авторизация и загрузка видео в ВКонтакте</title>
 </head>
 <body>
+    <h1>Авторизация через ВКонтакте</h1>
+    <div id="auth-container">
+        <!-- Подключение VKID SDK -->
+        <script src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
+        <script type="text/javascript">
+            if ('VKIDSDK' in window) {
+                const VKID = window.VKIDSDK;
 
-<h1>Автоматическая загрузка видео из YouTube в ВКонтакте</h1>
+                // Инициализация VKID SDK
+                VKID.Config.init({
+                    app: 52966496, // Замените на ваш реальный ID приложения из настроек
+                    redirectUrl: 'https://fhyh246.github.io/anegdot/', // Адрес, где размещено приложение
+                    responseMode: VKID.ConfigResponseMode.Callback,
+                    source: VKID.ConfigSource.LOWCODE,
+                    scope: 'video,offline,wall', // Запрашиваемые доступы
+                });
 
-<!-- Форма для ввода данных -->
-<form id="videoForm">
-    <label for="vkGroupId">ID группы ВКонтакте:</label>
-    <input type="text" id="vkGroupId" placeholder="Введите ID группы" required><br><br>
+                // Создание кнопки One Tap
+                const oneTap = new VKID.OneTap();
 
-    <label for="searchQuery">Поиск на YouTube:</label>
-    <input type="text" id="searchQuery" placeholder="Поиск видео (например, 'cat')" required><br><br>
+                oneTap.render({
+                    container: document.getElementById('auth-container'),
+                    scheme: 'dark', // Тема кнопки ('dark' или 'light')
+                    showAlternativeLogin: true // Показывать альтернативные способы входа
+                })
+                .on(VKID.WidgetEvents.ERROR, vkidOnError)
+                .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
+                    const code = payload.code;
+                    const deviceId = payload.device_id;
 
-    <button type="submit">Загрузить видео</button>
-</form>
+                    // Обмен кода на токен доступа
+                    VKID.Auth.exchangeCode(code, deviceId)
+                        .then(vkidOnSuccess)
+                        .catch(vkidOnError);
+                });
 
-<div id="status"></div>
+                // Обработка успешной авторизации
+                function vkidOnSuccess(data) {
+                    console.log("Успешная авторизация:", data);
+                    alert("Авторизация прошла успешно! Токен: " + data.access_token);
+                }
 
-<script>
-// Ваши токены
-const vkAccessToken = 'IHe6ft8lCipWzbnL4noD';  // Токен ВКонтакте
-const youtubeApiKey = 'AIzaSyBoKzOFupL2287jRbPsxjtgKH49';  // Токен YouTube
+                // Обработка ошибок
+                function vkidOnError(error) {
+                    console.error("Ошибка авторизации:", error);
+                    alert("Произошла ошибка при авторизации.");
+                }
+            }
+        </script>
+    </div>
 
-// Функция для получения видео с YouTube
-function getYouTubeVideos(query, apiKey) {
-    const youtubeUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&key=${apiKey}`;
-    return fetch(youtubeUrl)
-        .then(response => response.json())
-        .then(data => {
-            const videoUrls = data.items.map(item => `https://www.youtube.com/watch?v=${item.id.videoId}`);
-            return videoUrls;
+    <hr>
+
+    <h1>Загрузка видео в группу ВКонтакте</h1>
+    <label for="groupId">ID группы ВКонтакте:</label>
+    <input type="text" id="groupId" placeholder="Введите ID группы">
+    <label for="youtubeLink">Ссылка на YouTube-видео:</label>
+    <input type="text" id="youtubeLink" placeholder="Вставьте ссылку на видео">
+    <button id="uploadButton">Загрузить видео</button>
+    <div id="status"></div>
+
+    <script>
+        const serviceToken = "ecc5b84cecc5b84cecc5b84cc0efed8c2ceecc5ecc5b84c8b511ddeeea5a3e19c4dd83b";
+
+        document.getElementById('uploadButton').addEventListener('click', async () => {
+            const groupId = document.getElementById('groupId').value.trim();
+            const youtubeLink = document.getElementById('youtubeLink').value.trim();
+            const status = document.getElementById('status');
+
+            if (!groupId || !youtubeLink) {
+                status.textContent = "Пожалуйста, заполните все поля.";
+                return;
+            }
+
+            try {
+                // 1. Получить сервер для загрузки видео
+                const uploadServerResponse = await fetch(`https://api.vk.com/method/video.save?group_id=${groupId}&link=${encodeURIComponent(youtubeLink)}&access_token=${serviceToken}&v=5.131`);
+                const uploadServerData = await uploadServerResponse.json();
+
+                if (uploadServerData.error) {
+                    throw new Error(`Ошибка API ВКонтакте: ${uploadServerData.error.error_msg}`);
+                }
+
+                const uploadUrl = uploadServerData.response.upload_url;
+
+                // 2. Загрузить видео на полученный сервер
+                const videoUploadResponse = await fetch(uploadUrl, {
+                    method: 'POST',
+                });
+                const videoUploadData = await videoUploadResponse.json();
+
+                if (videoUploadData.error) {
+                    throw new Error(`Ошибка при загрузке видео: ${videoUploadData.error.error_msg}`);
+                }
+
+                status.textContent = "Видео успешно загружено в группу ВКонтакте!";
+            } catch (error) {
+                console.error(error);
+                status.textContent = `Произошла ошибка: ${error.message}`;
+            }
         });
-}
-
-// Функция для публикации видео в ВКонтакте
-function postVideoToVK(videoUrl, accessToken, groupId) {
-    const vkUrl = 'https://api.vk.com/method/video.save';
-    const params = {
-        access_token: accessToken,
-        v: '5.131',
-        name: 'Video Title',  // Название видео
-        description: 'Video Description',  // Описание видео
-        group_id: groupId,
-        file_url: videoUrl  // Ссылка на видео
-    };
-
-    return fetch(vkUrl, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(params)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.response) {
-            console.log(`Видео ${videoUrl} успешно загружено!`);
-            document.getElementById("status").innerText = 'Видео успешно загружено!';
-        } else {
-            console.log(`Ошибка при загрузке видео: ${result.error.error_msg}`);
-            document.getElementById("status").innerText = 'Ошибка при загрузке видео!';
-        }
-    });
-}
-
-// Обработчик формы
-document.getElementById('videoForm').addEventListener('submit', function(event) {
-    event.preventDefault();
-
-    const vkGroupId = document.getElementById('vkGroupId').value;
-    const searchQuery = document.getElementById('searchQuery').value;
-
-    // Получаем видео с YouTube
-    getYouTubeVideos(searchQuery, youtubeApiKey).then(videoUrls => {
-        videoUrls.forEach(videoUrl => {
-            // Загружаем видео в группу ВКонтакте
-            postVideoToVK(videoUrl, vkAccessToken, vkGroupId);
-        });
-    });
-});
-</script>
-
+    </script>
 </body>
 </html>
