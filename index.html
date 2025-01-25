@@ -8,42 +8,52 @@
 </head>
 <body>
     <h1>Загрузка файлов в группу ВКонтакте</h1>
+    <div id="console" style="background: #f4f4f4; padding: 10px; border: 1px solid #ccc; max-height: 200px; overflow-y: auto;"></div>
     <div>
         <h3>Авторизация</h3>
         <div id="auth-container"></div>
-        <p id="auth-status">Не авторизовано</p>
     </div>
     <div>
         <h3>Введите ID группы</h3>
         <input type="text" id="group-id-input" placeholder="Введите ID группы">
-        <p id="group-status">Группа не выбрана</p>
     </div>
     <div>
-        <h3>Загрузить файл</h3>
+        <h3>Загрузка видео с YouTube</h3>
+        <button id="youtube-btn" disabled>Загрузить видео с YouTube</button>
+    </div>
+    <div>
+        <h3>Загрузка своей медиатеки</h3>
         <input type="file" id="file-input" accept="video/*,image/*">
-        <button id="upload-btn" disabled>Загрузить</button>
-        <p id="upload-status"></p>
+        <button id="upload-btn" disabled>Загрузить файл</button>
     </div>
 
     <script>
-        let accessToken = null; // Токен доступа
-        let groupId = null; // ID группы
-        const authStatus = document.getElementById('auth-status');
-        const groupStatus = document.getElementById('group-status');
-        const uploadStatus = document.getElementById('upload-status');
-        const groupIdInput = document.getElementById('group-id-input');
-        const fileInput = document.getElementById('file-input');
-        const uploadBtn = document.getElementById('upload-btn');
+        let accessToken = null;
+        let groupId = null;
 
-        // Инициализация VKID SDK
+        const consoleLog = (msg) => {
+            const consoleDiv = document.getElementById('console');
+            const p = document.createElement('p');
+            p.textContent = msg;
+            consoleDiv.appendChild(p);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        };
+
+        const enableButtons = () => {
+            if (accessToken && groupId) {
+                document.getElementById('youtube-btn').disabled = false;
+                document.getElementById('upload-btn').disabled = false;
+            }
+        };
+
         if ('VKIDSDK' in window) {
             const VKID = window.VKIDSDK;
             VKID.Config.init({
-                app: 52966542, // ID вашего приложения VK
-                redirectUrl: 'https://fhyh246.github.io/anegdot/', // Укажите URL-адрес, где размещено приложение
+                app: 52966542,
+                redirectUrl: 'https://fhyh246.github.io/anegdot/',
                 responseMode: VKID.ConfigResponseMode.Callback,
                 source: VKID.ConfigSource.LOWCODE,
-                scope: 'video,offline,photos', // Запрашиваемые доступы
+                scope: 'video,offline,photos',
             });
 
             const oneTap = new VKID.OneTap();
@@ -51,88 +61,72 @@
                 container: document.getElementById('auth-container'),
                 showAlternativeLogin: true,
             })
-            .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
-                const code = payload.code;
-                const deviceId = payload.device_id;
-
-                VKID.Auth.exchangeCode(code, deviceId)
+            .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, (payload) => {
+                VKID.Auth.exchangeCode(payload.code, payload.device_id)
                     .then((data) => {
                         accessToken = data.access_token;
-                        authStatus.innerText = "Авторизация успешна!";
-                        console.log("Токен доступа получен:", accessToken);
-                        enableUploadButton();
+                        consoleLog("Авторизация успешна! Токен получен.");
+                        enableButtons();
                     })
-                    .catch((error) => {
-                        authStatus.innerText = "Ошибка авторизации.";
-                        console.error("Ошибка авторизации:", error);
-                    });
+                    .catch((error) => consoleLog("Ошибка авторизации: " + error.message));
             })
-            .on(VKID.WidgetEvents.ERROR, (error) => {
-                authStatus.innerText = "Ошибка виджета.";
-                console.error("Ошибка виджета VKID:", error);
-            });
+            .on(VKID.WidgetEvents.ERROR, (error) => consoleLog("Ошибка виджета VKID: " + error.message));
         }
 
-        // Включение кнопки загрузки при наличии токена и ID группы
-        function enableUploadButton() {
-            if (accessToken && groupId) {
-                uploadBtn.disabled = false;
-            }
-        }
+        document.getElementById('group-id-input').addEventListener('input', (e) => {
+            groupId = e.target.value.trim();
+            if (groupId) consoleLog(`ID группы установлен: ${groupId}`);
+            enableButtons();
+        });
 
-        // Обработка ввода ID группы
-        groupIdInput.addEventListener('input', () => {
-            groupId = groupIdInput.value.trim();
-            if (groupId) {
-                groupStatus.innerText = `ID группы сохранен: ${groupId}`;
-                enableUploadButton();
-            } else {
-                groupStatus.innerText = "Группа не выбрана";
-                uploadBtn.disabled = true;
+        document.getElementById('youtube-btn').addEventListener('click', async () => {
+            consoleLog("Начало загрузки видео с YouTube...");
+            try {
+                const youtubeResponse = await fetch(`https://www.googleapis.com/youtube/v3/search?key=YOUR_YOUTUBE_API_KEY&part=snippet&maxResults=1&type=video&videoEmbeddable=true&relevanceLanguage=ru`);
+                const youtubeData = await youtubeResponse.json();
+                if (!youtubeData.items || !youtubeData.items.length) throw new Error("Видео не найдено.");
+
+                const video = youtubeData.items[0];
+                consoleLog(`Видео для загрузки: ${video.snippet.title}`);
+
+                const vkResponse = await fetch(`https://api.vk.com/method/video.save?group_id=${groupId}&name=${video.snippet.title}&description=${video.snippet.description}&access_token=${accessToken}&v=5.131`);
+                const vkData = await vkResponse.json();
+                if (vkData.error) throw new Error(vkData.error.error_msg);
+
+                const uploadUrl = vkData.response.upload_url;
+                consoleLog("Ссылка для загрузки получена.");
+
+                const uploadResponse = await fetch(uploadUrl, { method: 'POST' });
+                consoleLog("Видео успешно загружено.");
+            } catch (error) {
+                consoleLog("Ошибка загрузки видео: " + error.message);
             }
         });
 
-        // Обработка загрузки файла
-        uploadBtn.addEventListener('click', async () => {
-            const file = fileInput.files[0];
+        document.getElementById('upload-btn').addEventListener('click', async () => {
+            const file = document.getElementById('file-input').files[0];
             if (!file) {
-                uploadStatus.innerText = "Выберите файл для загрузки.";
+                consoleLog("Файл не выбран.");
                 return;
             }
-
-            uploadStatus.innerText = "Начало загрузки файла...";
+            consoleLog("Начало загрузки файла...");
             try {
-                // Получение ссылки для загрузки
-                const uploadUrlResponse = await fetch(
-                    `https://api.vk.com/method/video.save?group_id=${groupId}&name=${file.name}&description=Загружено через приложение&access_token=${accessToken}&v=5.131`
-                );
-                const uploadUrlData = await uploadUrlResponse.json();
+                const vkResponse = await fetch(`https://api.vk.com/method/photos.getWallUploadServer?group_id=${groupId}&access_token=${accessToken}&v=5.131`);
+                const vkData = await vkResponse.json();
+                if (vkData.error) throw new Error(vkData.error.error_msg);
 
-                if (uploadUrlData.error) {
-                    throw new Error(`Ошибка VK API: ${uploadUrlData.error.error_msg}`);
-                }
-
-                const uploadUrl = uploadUrlData.response.upload_url;
-
-                // Загрузка файла
+                const uploadUrl = vkData.response.upload_url;
                 const formData = new FormData();
                 formData.append('file', file);
 
-                const uploadResponse = await fetch(uploadUrl, {
-                    method: 'POST',
-                    body: formData,
-                });
-
+                const uploadResponse = await fetch(uploadUrl, { method: 'POST', body: formData });
                 const uploadResult = await uploadResponse.json();
-                if (uploadResult.error) {
-                    throw new Error(`Ошибка загрузки: ${uploadResult.error.error_msg}`);
-                }
 
-                uploadStatus.innerText = "Файл успешно загружен!";
-                console.log("Результат загрузки:", uploadResult);
+                if (uploadResult.error) throw new Error(uploadResult.error.error_msg);
+
+                consoleLog("Файл успешно загружен.");
             } catch (error) {
-                uploadStatus.innerText = `Ошибка загрузки: ${error.message}`;
-                console.error("Ошибка при загрузке файла:", error);
+                consoleLog("Ошибка загрузки файла: " + error.message);
             }
         });
     </script>
