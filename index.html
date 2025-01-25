@@ -3,11 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Смена IP и проверка ссылок</title>
+    <title>Проверка сайта на уязвимости</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            margin: 5px;
+            font-size: 16px;
         }
         button {
             padding: 10px 20px;
@@ -15,113 +20,49 @@
             font-size: 16px;
             cursor: pointer;
         }
-        ul {
+        #results {
             margin-top: 20px;
             list-style: none;
             padding: 0;
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid #ccc;
         }
         li {
             margin: 5px 0;
         }
-        .working {
-            color: green;
-            font-weight: bold;
-        }
-        .not-working {
-            color: red;
-        }
     </style>
 </head>
 <body>
-    <h1>Проверка ссылок с изменением IP</h1>
-    <button id="start">Начать проверку</button>
-    <button id="stop" disabled>Остановить</button>
+    <h1>Проверка на уязвимости</h1>
+    <form id="urlForm">
+        <label for="url">Введите URL для проверки:</label><br>
+        <input type="text" id="url" name="url" required><br><br>
+        <button type="submit">Проверить сайт</button>
+    </form>
+
     <ul id="results"></ul>
 
     <script>
-        let isRunning = false;
-        const proxies = [
-            'http://200.55.249.135:80',    // Эквадор, Мачала
-            'https://182.53.245.241:443',  // Таиланд, Чантхабури
-            'socks4://213.197.136.218:1080', // Литва, Вильнюс
-            'socks5://23.227.199.108:1080', // США, Чикаго
-        ];
-
-        // Функция для генерации случайного идентификатора
-        function generateRandomId() {
-            const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-            let result = "GALL_";
-            for (let i = 0; i < 22; i++) {
-                result += characters.charAt(Math.floor(Math.random() * characters.length));
-            }
-            return result;
-        }
-
-        // Функция для отправки запроса с прокси
-        async function checkLinkWithProxy(url, proxy) {
-            try {
-                const response = await fetch(url, {
-                    method: 'HEAD',
-                    headers: {
-                        'Proxy-Authorization': 'Basic ' + btoa('user:password') // Для прокси, требующих авторизации
-                    }
-                });
-                return response.ok;
-            } catch (error) {
-                return false;
-            }
-        }
-
-        // Проверка ссылки с выбором прокси
-        async function continuousCheckWithProxy(threadId) {
+        document.getElementById("urlForm").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const url = document.getElementById("url").value;
             const results = document.getElementById("results");
 
-            while (isRunning) {
-                const randomId = generateRandomId();
-                const url = `https://xxfot.com/${randomId}`;
-                const proxy = proxies[Math.floor(Math.random() * proxies.length)]; // Выбираем случайный прокси
+            results.innerHTML = "<li>Начинаю проверку...</li>";
 
-                const isValid = await checkLinkWithProxy(url, proxy);
-
+            try {
+                const response = await fetch(`/check?url=${encodeURIComponent(url)}`);
+                const data = await response.json();
+                results.innerHTML = "";
+                data.forEach(result => {
+                    const listItem = document.createElement("li");
+                    listItem.textContent = result;
+                    results.appendChild(listItem);
+                });
+            } catch (error) {
                 const listItem = document.createElement("li");
-                listItem.textContent = `Thread ${threadId}: ${url}`;
-
-                if (isValid) {
-                    listItem.className = "working";
-                } else {
-                    listItem.className = "not-working";
-                }
-
+                listItem.textContent = "Ошибка при проверке сайта.";
                 results.appendChild(listItem);
-                results.scrollTop = results.scrollHeight; // Прокрутка вниз для новых ссылок
             }
-        }
-
-        // Функция для запуска проверки
-        function startChecking() {
-            isRunning = true;
-            document.getElementById("start").disabled = true;
-            document.getElementById("stop").disabled = false;
-
-            // Запускаем 500 потоков с прокси
-            for (let i = 0; i < 50000; i++) {
-                continuousCheckWithProxy(i);
-            }
-        }
-
-        // Остановка проверки
-        function stopChecking() {
-            isRunning = false;
-            document.getElementById("start").disabled = false;
-            document.getElementById("stop").disabled = true;
-        }
-
-        // Добавляем обработчики кнопок
-        document.getElementById("start").addEventListener("click", startChecking);
-        document.getElementById("stop").addEventListener("click", stopChecking);
+        });
     </script>
 </body>
 </html>
