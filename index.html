@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Сирена</title>
+    <title>Хаос Сирены</title>
     <style>
         body {
             margin: 0;
             height: 100vh;
+            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -16,11 +17,18 @@
         }
 
         h1 {
-            font-size: 5rem;
+            font-size: 5vw;
             font-weight: bold;
             text-transform: uppercase;
             color: white;
             text-shadow: 0 0 20px red, 0 0 40px yellow, 0 0 60px blue;
+            text-align: center;
+        }
+
+        .emoji {
+            position: absolute;
+            font-size: 4vw;
+            animation: float 2s ease-in-out infinite;
         }
 
         @keyframes flash {
@@ -31,6 +39,15 @@
             80% { background-color: blue; }
             100% { background-color: violet; }
         }
+
+        @keyframes float {
+            from {
+                transform: translateY(0);
+            }
+            to {
+                transform: translateY(-20px);
+            }
+        }
     </style>
 </head>
 <body>
@@ -39,18 +56,49 @@
         <source src="https://www.soundjay.com/button/beep-07.wav" type="audio/wav">
         Ваш браузер не поддерживает аудио.
     </audio>
+    <audio id="random-sound" preload="auto">
+        <source src="https://www.soundjay.com/button/beep-09.wav" type="audio/wav">
+    </audio>
+
     <script>
-        // Автоматическое воспроизведение сирены
-        const audio = document.getElementById('siren-sound');
-        audio.volume = 1.0; // Максимальная громкость
-        audio.play().catch(error => {
-            console.log("Автовоспроизведение блокировано. Нажмите на экран для активации звука.");
+        // Переменные для аудио
+        const sirenAudio = document.getElementById('siren-sound');
+        const randomAudio = document.getElementById('random-sound');
+
+        // Автоматическое воспроизведение сирены с разрешением
+        document.body.addEventListener('click', () => {
+            // Запуск сирены
+            if (sirenAudio.paused) {
+                sirenAudio.volume = 1.0; // Максимальная громкость
+                sirenAudio.play().catch(error => {
+                    console.log("Ошибка воспроизведения сирены:", error);
+                });
+            }
+
+            // Дополнительные хаотичные действия
+            chaosEffects();
         });
 
-        // Включить звук по нажатию
-        document.body.addEventListener('click', () => {
-            audio.play();
-        });
+        // Функция для хаотичных действий
+        function chaosEffects() {
+            // Смена фона на случайный цвет
+            document.body.style.backgroundColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+
+            // Добавление случайных смайликов
+            const emojis = ['😎', '🔥', '😂', '🤖', '👽', '🎉', '💀', '👾', '🦄', '🌈'];
+            const emoji = document.createElement('div');
+            emoji.classList.add('emoji');
+            emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            emoji.style.left = `${Math.random() * 100}vw`;
+            emoji.style.top = `${Math.random() * 100}vh`;
+            document.body.appendChild(emoji);
+
+            // Удаление смайлика через 2 секунды
+            setTimeout(() => emoji.remove(), 2000);
+
+            // Воспроизведение случайного звука
+            randomAudio.play();
+        }
     </script>
 </body>
 </html>
