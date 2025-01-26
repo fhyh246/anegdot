@@ -3,60 +3,124 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Шапик Прыгает</title>
+  <title>Крестики-Нолики</title>
   <style>
     body {
-      margin: 0;
-      overflow: hidden;
-      background-color: #f0f0f0;
+      font-family: Arial, sans-serif;
+      text-align: center;
     }
-    canvas {
-      display: block;
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-gap: 5px;
+      justify-content: center;
+    }
+    .cell {
+      width: 100px;
+      height: 100px;
+      background: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 2rem;
+      cursor: pointer;
+    }
+    .cell.taken {
+      cursor: not-allowed;
+    }
+    #status {
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-<canvas id="gameCanvas"></canvas>
-<script>
-  const canvas = document.getElementById('gameCanvas');
-  const ctx = canvas.getContext('2d');
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  <h1>Крестики-Нолики</h1>
+  <div id="peers">
+    <h3>Доступные игроки:</h3>
+    <select id="peerList"></select>
+    <button id="connectButton">Подключиться</button>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div id="status">Ожидание подключения...</div>
 
-  const shappy = {
-    x: canvas.width / 2,
-    y: canvas.height / 2,
-    width: 50,
-    height: 50,
-    dx: 4,
-    dy: 4,
-  };
+  <script>
+    const peerConnections = {};
+    const peerList = document.getElementById("peerList");
+    const connectButton = document.getElementById("connectButton");
+    const grid = document.getElementById("grid");
+    const status = document.getElementById("status");
+    const cells = [];
+    let currentPlayer = 'X';
+    let isMyTurn = false;
+    let connectedPeer = null;
+    const configuration = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-  function drawShappy() {
-    ctx.fillStyle = 'orange';
-    ctx.fillRect(shappy.x, shappy.y, shappy.width, shappy.height);
-  }
+    const localConnection = new RTCPeerConnection(configuration);
+    const dataChannel = localConnection.createDataChannel("game");
 
-  function update() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawShappy();
+    // Создаем игровую сетку
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement("div");
+      cell.classList.add("cell");
+      cell.dataset.index = i;
+      grid.appendChild(cell);
+      cells.push(cell);
 
-    // Движение "Шапика"
-    shappy.x += shappy.dx;
-    shappy.y += shappy.dy;
-
-    // Отскок от стен
-    if (shappy.x + shappy.width > canvas.width || shappy.x < 0) {
-      shappy.dx *= -1;
+      cell.addEventListener("click", () => {
+        if (isMyTurn && !cell.classList.contains("taken")) {
+          makeMove(i, currentPlayer);
+          dataChannel.send(JSON.stringify({ index: i, player: currentPlayer }));
+        }
+      });
     }
-    if (shappy.y + shappy.height > canvas.height || shappy.y < 0) {
-      shappy.dy *= -1;
+
+    // Отображение списка доступных игроков
+    connectButton.addEventListener("click", () => {
+      const peerId = peerList.value;
+      if (peerId) {
+        connectToPeer(peerId);
+      }
+    });
+
+    // Обработка сообщений от другого игрока
+    dataChannel.onmessage = (event) => {
+      const { index, player } = JSON.parse(event.data);
+      makeMove(index, player);
+    };
+
+    // Обработка хода
+    function makeMove(index, player) {
+      cells[index].textContent = player;
+      cells[index].classList.add("taken");
+      if (checkWin()) {
+        status.textContent = `Победил ${player}!`;
+        isMyTurn = false;
+        return;
+      }
+      currentPlayer = currentPlayer === "X" ? "O" : "X";
+      isMyTurn = !isMyTurn;
+      status.textContent = isMyTurn ? "Ваш ход" : "Ход соперника";
     }
 
-    requestAnimationFrame(update);
-  }
+    // Проверка победы
+    function checkWin() {
+      const winningCombinations = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Горизонтальные
+        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Вертикальные
+        [0, 4, 8], [2, 4, 6]             // Диагонали
+      ];
+      return winningCombinations.some((combo) => 
+        combo.every((index) => cells[index].textContent === currentPlayer)
+      );
+    }
 
-  update();
-</script>
+    // Подключение к другому игроку
+    async function connectToPeer(peerId) {
+      connectedPeer = peerId;
+      const offer = await localConnection.createOffer();
+      await localConnection.setLocalDescription(offer);
+      // Передать `offer` другому игроку через локальную сеть
+    }
+  </script>
 </body>
 </html>
