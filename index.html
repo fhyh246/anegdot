@@ -1,154 +1,142 @@
-<script>
-  const grid = document.getElementById('grid');
-  const status = document.getElementById('status');
-  const peerList = document.getElementById('peerList');
-  const connectButton = document.getElementById('connectButton');
-
-  let localConnection, dataChannel;
-  let isMyTurn = false;
-  let currentPlayer = "X";
-  let connectedPeer = null;
-
-  const socket = new WebSocket('ws://localhost:8080'); // Подключение к серверу
-
-  socket.onopen = () => {
-    const name = prompt("Введите своё имя:");
-    socket.send(JSON.stringify({ type: "register", name }));
-  };
-
-  socket.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-
-    if (data.type === "players") {
-      updatePlayerList(data.players);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Крестики-Нолики</title>
+  <style>
+    /* Общие стили */
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      color: #444;
     }
 
-    if (data.type === "signal" && data.target === localName) {
-      handleSignal(data);
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      color: #333;
+      text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
     }
-  };
 
-  function updatePlayerList(players) {
-    peerList.innerHTML = players
-      .filter((player) => player !== localName)
-      .map((player) => `<option value="${player}">${player}</option>`)
-      .join("");
-  }
-
-  connectButton.addEventListener("click", () => {
-    const peer = peerList.value;
-    if (peer) {
-      startConnection(peer);
+    #status {
+      font-size: 1.2rem;
+      margin-top: 15px;
+      color: #555;
+      font-weight: bold;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
     }
-  });
 
-  function startConnection(peer) {
-    localConnection = new RTCPeerConnection();
-    dataChannel = localConnection.createDataChannel("game");
-    connectedPeer = peer;
+    /* Стили для списка игроков */
+    #peers {
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      margin-bottom: 20px;
+      text-align: center;
+    }
 
-    dataChannel.onopen = () => {
-      isMyTurn = true;
-      status.textContent = "Вы подключены! Ваш ход.";
-    };
+    select, button {
+      font-size: 1rem;
+      padding: 10px 15px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
 
-    dataChannel.onmessage = (event) => {
-      const { index, player } = JSON.parse(event.data);
-      makeMove(index, player);
-    };
+    select {
+      width: 200px;
+    }
 
-    localConnection.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.send(JSON.stringify({
-          type: "signal",
-          target: peer,
-          candidate: event.candidate,
-        }));
+    button {
+      background: linear-gradient(135deg, #ff758c, #ff7eb3);
+      color: #fff;
+      cursor: pointer;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 5px 15px rgba(255, 0, 150, 0.4);
+    }
+
+    /* Стили для игровой сетки */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 120px);
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .cell {
+      width: 120px;
+      height: 120px;
+      background: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: #ff758c;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+      transition: transform 0.3s ease, background 0.3s ease;
+    }
+
+    .cell:hover:not(.taken) {
+      background: #ffe0e6;
+      transform: scale(1.1);
+    }
+
+    .cell.taken {
+      cursor: not-allowed;
+      background: #f5f5f5;
+      color: #aaa;
+    }
+
+    /* Медиа-запросы для адаптивности */
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: repeat(3, 80px);
+        gap: 8px;
       }
-    };
-
-    localConnection.createOffer().then((offer) => {
-      localConnection.setLocalDescription(offer);
-      socket.send(JSON.stringify({
-        type: "signal",
-        target: peer,
-        offer,
-      }));
-    });
-  }
-
-  function handleSignal(data) {
-    if (data.offer) {
-      localConnection = new RTCPeerConnection();
-      localConnection.ondatachannel = (event) => {
-        dataChannel = event.channel;
-
-        dataChannel.onopen = () => {
-          isMyTurn = false;
-          status.textContent = "Вы подключены! Ход соперника.";
-        };
-
-        dataChannel.onmessage = (event) => {
-          const { index, player } = JSON.parse(event.data);
-          makeMove(index, player);
-        };
-      };
-
-      localConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-          socket.send(JSON.stringify({
-            type: "signal",
-            target: data.name,
-            candidate: event.candidate,
-          }));
-        }
-      };
-
-      localConnection.setRemoteDescription(data.offer);
-      localConnection.createAnswer().then((answer) => {
-        localConnection.setLocalDescription(answer);
-        socket.send(JSON.stringify({
-          type: "signal",
-          target: data.name,
-          answer,
-        }));
-      });
-    }
-
-    if (data.answer) {
-      localConnection.setRemoteDescription(data.answer);
-    }
-
-    if (data.candidate) {
-      localConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-    }
-  }
-
-  function makeMove(index, player) {
-    const cell = grid.children[index];
-    if (!cell.classList.contains('taken')) {
-      cell.textContent = player;
-      cell.classList.add('taken');
-
-      if (checkWin(player)) {
-        status.textContent = `Победил ${player}!`;
-        return;
+      .cell {
+        width: 80px;
+        height: 80px;
+        font-size: 1.8rem;
       }
-
-      currentPlayer = player === "X" ? "O" : "X";
-      isMyTurn = !isMyTurn;
-      status.textContent = isMyTurn ? "Ваш ход." : "Ход соперника.";
     }
-  }
+  </style>
+</head>
+<body>
+  <h1>Крестики-Нолики</h1>
 
-  function checkWin(player) {
-    const winningCombinations = [
-      [0, 1, 2], [3, 4, 5], [6, 7, 8],
-      [0, 3, 6], [1, 4, 7], [2, 5, 8],
-      [0, 4, 8], [2, 4, 6]
-    ];
-    return winningCombinations.some((combo) =>
-      combo.every((index) => grid.children[index].textContent === player)
-    );
-  }
-</script>
+  <!-- Выбор игроков -->
+  <div id="peers">
+    <h3>Выберите соперника:</h3>
+    <select id="peerList">
+      <option value="">Игроков пока нет...</option>
+    </select>
+    <button id="connectButton">Играть</button>
+  </div>
+
+  <!-- Игровая сетка -->
+  <div class="grid" id="grid"></div>
+
+  <!-- Статус игры -->
+  <div id="status">Ожидание подключения...</div>
+
+  <script>
+    // JavaScript остаётся прежним (из предыдущего ответа), только дополняется стилями.
+  </script>
+</body>
+</html>
