@@ -1,126 +1,154 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Крестики-Нолики</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(3, 100px);
-      grid-gap: 5px;
-      justify-content: center;
-    }
-    .cell {
-      width: 100px;
-      height: 100px;
-      background: #f0f0f0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 2rem;
-      cursor: pointer;
-    }
-    .cell.taken {
-      cursor: not-allowed;
-    }
-    #status {
-      margin-top: 20px;
-    }
-  </style>
-</head>
-<body>
-  <h1>Крестики-Нолики</h1>
-  <div id="peers">
-    <h3>Доступные игроки:</h3>
-    <select id="peerList"></select>
-    <button id="connectButton">Подключиться</button>
-  </div>
-  <div class="grid" id="grid"></div>
-  <div id="status">Ожидание подключения...</div>
+<script>
+  const grid = document.getElementById('grid');
+  const status = document.getElementById('status');
+  const peerList = document.getElementById('peerList');
+  const connectButton = document.getElementById('connectButton');
 
-  <script>
-    const peerConnections = {};
-    const peerList = document.getElementById("peerList");
-    const connectButton = document.getElementById("connectButton");
-    const grid = document.getElementById("grid");
-    const status = document.getElementById("status");
-    const cells = [];
-    let currentPlayer = 'X';
-    let isMyTurn = false;
-    let connectedPeer = null;
-    const configuration = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+  let localConnection, dataChannel;
+  let isMyTurn = false;
+  let currentPlayer = "X";
+  let connectedPeer = null;
 
-    const localConnection = new RTCPeerConnection(configuration);
-    const dataChannel = localConnection.createDataChannel("game");
+  const socket = new WebSocket('ws://localhost:8080'); // Подключение к серверу
 
-    // Создаем игровую сетку
-    for (let i = 0; i < 9; i++) {
-      const cell = document.createElement("div");
-      cell.classList.add("cell");
-      cell.dataset.index = i;
-      grid.appendChild(cell);
-      cells.push(cell);
+  socket.onopen = () => {
+    const name = prompt("Введите своё имя:");
+    socket.send(JSON.stringify({ type: "register", name }));
+  };
 
-      cell.addEventListener("click", () => {
-        if (isMyTurn && !cell.classList.contains("taken")) {
-          makeMove(i, currentPlayer);
-          dataChannel.send(JSON.stringify({ index: i, player: currentPlayer }));
-        }
-      });
+  socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    if (data.type === "players") {
+      updatePlayerList(data.players);
     }
 
-    // Отображение списка доступных игроков
-    connectButton.addEventListener("click", () => {
-      const peerId = peerList.value;
-      if (peerId) {
-        connectToPeer(peerId);
-      }
-    });
+    if (data.type === "signal" && data.target === localName) {
+      handleSignal(data);
+    }
+  };
 
-    // Обработка сообщений от другого игрока
+  function updatePlayerList(players) {
+    peerList.innerHTML = players
+      .filter((player) => player !== localName)
+      .map((player) => `<option value="${player}">${player}</option>`)
+      .join("");
+  }
+
+  connectButton.addEventListener("click", () => {
+    const peer = peerList.value;
+    if (peer) {
+      startConnection(peer);
+    }
+  });
+
+  function startConnection(peer) {
+    localConnection = new RTCPeerConnection();
+    dataChannel = localConnection.createDataChannel("game");
+    connectedPeer = peer;
+
+    dataChannel.onopen = () => {
+      isMyTurn = true;
+      status.textContent = "Вы подключены! Ваш ход.";
+    };
+
     dataChannel.onmessage = (event) => {
       const { index, player } = JSON.parse(event.data);
       makeMove(index, player);
     };
 
-    // Обработка хода
-    function makeMove(index, player) {
-      cells[index].textContent = player;
-      cells[index].classList.add("taken");
-      if (checkWin()) {
+    localConnection.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.send(JSON.stringify({
+          type: "signal",
+          target: peer,
+          candidate: event.candidate,
+        }));
+      }
+    };
+
+    localConnection.createOffer().then((offer) => {
+      localConnection.setLocalDescription(offer);
+      socket.send(JSON.stringify({
+        type: "signal",
+        target: peer,
+        offer,
+      }));
+    });
+  }
+
+  function handleSignal(data) {
+    if (data.offer) {
+      localConnection = new RTCPeerConnection();
+      localConnection.ondatachannel = (event) => {
+        dataChannel = event.channel;
+
+        dataChannel.onopen = () => {
+          isMyTurn = false;
+          status.textContent = "Вы подключены! Ход соперника.";
+        };
+
+        dataChannel.onmessage = (event) => {
+          const { index, player } = JSON.parse(event.data);
+          makeMove(index, player);
+        };
+      };
+
+      localConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          socket.send(JSON.stringify({
+            type: "signal",
+            target: data.name,
+            candidate: event.candidate,
+          }));
+        }
+      };
+
+      localConnection.setRemoteDescription(data.offer);
+      localConnection.createAnswer().then((answer) => {
+        localConnection.setLocalDescription(answer);
+        socket.send(JSON.stringify({
+          type: "signal",
+          target: data.name,
+          answer,
+        }));
+      });
+    }
+
+    if (data.answer) {
+      localConnection.setRemoteDescription(data.answer);
+    }
+
+    if (data.candidate) {
+      localConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+    }
+  }
+
+  function makeMove(index, player) {
+    const cell = grid.children[index];
+    if (!cell.classList.contains('taken')) {
+      cell.textContent = player;
+      cell.classList.add('taken');
+
+      if (checkWin(player)) {
         status.textContent = `Победил ${player}!`;
-        isMyTurn = false;
         return;
       }
-      currentPlayer = currentPlayer === "X" ? "O" : "X";
+
+      currentPlayer = player === "X" ? "O" : "X";
       isMyTurn = !isMyTurn;
-      status.textContent = isMyTurn ? "Ваш ход" : "Ход соперника";
+      status.textContent = isMyTurn ? "Ваш ход." : "Ход соперника.";
     }
+  }
 
-    // Проверка победы
-    function checkWin() {
-      const winningCombinations = [
-        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Горизонтальные
-        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Вертикальные
-        [0, 4, 8], [2, 4, 6]             // Диагонали
-      ];
-      return winningCombinations.some((combo) => 
-        combo.every((index) => cells[index].textContent === currentPlayer)
-      );
-    }
-
-    // Подключение к другому игроку
-    async function connectToPeer(peerId) {
-      connectedPeer = peerId;
-      const offer = await localConnection.createOffer();
-      await localConnection.setLocalDescription(offer);
-      // Передать `offer` другому игроку через локальную сеть
-    }
-  </script>
-</body>
-</html>
+  function checkWin(player) {
+    const winningCombinations = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6]
+    ];
+    return winningCombinations.some((combo) =>
+      combo.every((index) => grid.children[index].textContent === player)
+    );
+  }
+</script>
