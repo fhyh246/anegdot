@@ -1,104 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Хаос Сирены</title>
-    <style>
-        body {
-            margin: 0;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: black;
-            animation: flash 0.1s infinite;
-        }
-
-        h1 {
-            font-size: 5vw;
-            font-weight: bold;
-            text-transform: uppercase;
-            color: white;
-            text-shadow: 0 0 20px red, 0 0 40px yellow, 0 0 60px blue;
-            text-align: center;
-        }
-
-        .emoji {
-            position: absolute;
-            font-size: 4vw;
-            animation: float 2s ease-in-out infinite;
-        }
-
-        @keyframes flash {
-            0% { background-color: red; }
-            20% { background-color: orange; }
-            40% { background-color: yellow; }
-            60% { background-color: green; }
-            80% { background-color: blue; }
-            100% { background-color: violet; }
-        }
-
-        @keyframes float {
-            from {
-                transform: translateY(0);
-            }
-            to {
-                transform: translateY(-20px);
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Успешный Успех 3000</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(45deg, #FFD700, #FF4500);
+      color: #fff;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    header {
+      background: #8B0000;
+      padding: 20px 0;
+    }
+    header h1 {
+      font-size: 2.5rem;
+      text-transform: uppercase;
+      margin: 0;
+    }
+    nav a {
+      margin: 0 15px;
+      color: #FFD700;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    nav a:hover {
+      color: #fff;
+    }
+    .container {
+      padding: 20px;
+    }
+    footer {
+      background: #8B0000;
+      padding: 10px 0;
+      font-size: 0.9rem;
+    }
+    input[type="search"] {
+      padding: 10px;
+      font-size: 1rem;
+      margin-top: 20px;
+      border: none;
+      border-radius: 5px;
+    }
+    button {
+      padding: 10px 20px;
+      background: #FFD700;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #FFA500;
+    }
+  </style>
 </head>
 <body>
-    <h1>Сирена активирована!</h1>
-    <audio id="siren-sound" loop>
-        <source src="https://www.soundjay.com/button/beep-07.wav" type="audio/wav">
-        Ваш браузер не поддерживает аудио.
-    </audio>
-    <audio id="random-sound" preload="auto">
-        <source src="https://www.soundjay.com/button/beep-09.wav" type="audio/wav">
-    </audio>
+  <header>
+    <h1>Успешный Успех 3000</h1>
+    <nav>
+      <a href="#about">О Нас</a>
+      <a href="#services">Наши Секреты</a>
+      <a href="#contacts">Контакты</a>
+    </nav>
+  </header>
 
-    <script>
-        // Переменные для аудио
-        const sirenAudio = document.getElementById('siren-sound');
-        const randomAudio = document.getElementById('random-sound');
+  <div class="container" id="about">
+    <h2>Добро пожаловать!</h2>
+    <p>На этом сайте мы раскроем главный секрет успешного успеха! Запоминайте: "Делай как мы, и будет как у нас!"</p>
+    <form onsubmit="searchSite(event)">
+      <input type="search" id="search" placeholder="Ищи успех...">
+      <button type="submit">Поиск</button>
+    </form>
+  </div>
 
-        // Автоматическое воспроизведение сирены с разрешением
-        document.body.addEventListener('click', () => {
-            // Запуск сирены
-            if (sirenAudio.paused) {
-                sirenAudio.volume = 1.0; // Максимальная громкость
-                sirenAudio.play().catch(error => {
-                    console.log("Ошибка воспроизведения сирены:", error);
-                });
-            }
+  <div class="container" id="services">
+    <h2>Наши Услуги</h2>
+    <p>📈 100% гарантии успеха! Мы научим вас:</p>
+    <ul>
+      <li>Как заработать миллион за 24 часа (без вложений!)</li>
+      <li>Как стать гуру личностного роста за неделю</li>
+      <li>Как ничего не делать, но всем говорить, что вы заняты</li>
+    </ul>
+    <p>💡 Наш слоган: "Если ты ещё не успешен — просто недостаточно старался."</p>
+  </div>
 
-            // Дополнительные хаотичные действия
-            chaosEffects();
-        });
+  <div class="container" id="contacts">
+    <h2>Контакты</h2>
+    <p>📞 Телефон: 8-800-555-35-35</p>
+    <p>📧 Почта: success@uspeh3000.com</p>
+    <p>🏢 Адрес: Москва, ул. Большой Успех, д. 3000</p>
+    <p>🌐 Часы работы: только в момент успеха</p>
+  </div>
 
-        // Функция для хаотичных действий
-        function chaosEffects() {
-            // Смена фона на случайный цвет
-            document.body.style.backgroundColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+  <footer>
+    <p>© 2025 Успешный Успех 3000. Все права защищены (но мы готовы их продать).</p>
+  </footer>
 
-            // Добавление случайных смайликов
-            const emojis = ['😎', '🔥', '😂', '🤖', '👽', '🎉', '💀', '👾', '🦄', '🌈'];
-            const emoji = document.createElement('div');
-            emoji.classList.add('emoji');
-            emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-            emoji.style.left = `${Math.random() * 100}vw`;
-            emoji.style.top = `${Math.random() * 100}vh`;
-            document.body.appendChild(emoji);
-
-            // Удаление смайлика через 2 секунды
-            setTimeout(() => emoji.remove(), 2000);
-
-            // Воспроизведение случайного звука
-            randomAudio.play();
-        }
-    </script>
+  <script>
+    // Поиск на сайте (юмористическая версия)
+    function searchSite(event) {
+      event.preventDefault();
+      const query = document.getElementById('search').value.toLowerCase();
+      if (query.includes('успех')) {
+        alert('Ты нашёл успех! Поздравляем!');
+      } else if (query === '') {
+        alert('Пустой запрос — пустой успех!');
+      } else {
+        alert('Мы не смогли найти это, но успех ждёт впереди!');
+      }
+    }
+  </script>
 </body>
 </html>
