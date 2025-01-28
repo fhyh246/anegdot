@@ -22,6 +22,7 @@
             padding: 10px;
             width: 100%;
             max-width: 600px;
+            box-sizing: border-box;
         }
         .container {
             display: flex;
@@ -37,6 +38,10 @@
             margin-top: 20px;
             padding: 10px;
             font-size: 16px;
+            cursor: pointer;
+        }
+        button:disabled {
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -56,7 +61,6 @@
     </div>
 
     <script>
-        // Генерация случайных ссылок (для тестирования 1000 ссылок)
         const generateRandomString = (length) => {
             const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
             let result = "";
@@ -82,21 +86,11 @@
         const allLinks = generateLinks(1000); // Генерация 1000 случайных ссылок
         let isRunning = false;
 
-        // 1. Проверка с использованием загрузки изображения
-        const checkWithImage = (url) => {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.onload = () => resolve({ url, status: "working" });
-                img.onerror = () => resolve({ url, status: "not-working" });
-                img.src = url;
-            });
-        };
-
-        // 2. Проверка с использованием fetch (HEAD запрос)
-        const checkWithFetchHead = async (url) => {
+        const checkWithFetch = async (url) => {
             try {
-                const response = await fetch(url, { method: "HEAD" });
-                if (response.ok) {
+                const response = await fetch(url, { method: 'HEAD' });
+                // Мы считаем ссылку рабочей, если статус код не 404 и не другие ошибки (например, 403, 500)
+                if (response.status !== 404 && response.status !== 403 && response.status !== 500) {
                     return { url, status: "working" };
                 } else {
                     return { url, status: "not-working" };
@@ -106,52 +100,6 @@
             }
         };
 
-        // 3. Проверка с использованием fetch (полный запрос)
-        const checkWithFetchFull = async (url) => {
-            try {
-                const response = await fetch(url);
-                if (response.ok) {
-                    return { url, status: "working" };
-                } else {
-                    return { url, status: "not-working" };
-                }
-            } catch (error) {
-                return { url, status: "not-working" };
-            }
-        };
-
-        // 4. Проверка с использованием XMLHttpRequest
-        const checkWithXMLHttpRequest = (url) => {
-            return new Promise((resolve) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open('GET', url, true);
-                xhr.onreadystatechange = () => {
-                    if (xhr.readyState === 4) {
-                        if (xhr.status === 200) {
-                            resolve({ url, status: "working" });
-                        } else {
-                            resolve({ url, status: "not-working" });
-                        }
-                    }
-                };
-                xhr.onerror = () => resolve({ url, status: "not-working" });
-                xhr.send();
-            });
-        };
-
-        // 5. Проверка с использованием iframe (если ссылка это веб-страница)
-        const checkWithIframe = (url) => {
-            return new Promise((resolve) => {
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.onload = () => resolve({ url, status: "working" });
-                iframe.onerror = () => resolve({ url, status: "not-working" });
-                iframe.src = url;
-                document.body.appendChild(iframe);
-            });
-        };
-
-        // Функция для отображения результата
         const display = (res, div) => {
             const el = document.createElement("div");
             el.textContent = res.url;
@@ -160,7 +108,6 @@
             div.scrollTop = div.scrollHeight; // прокрутка вниз
         };
 
-        // Функция для запуска проверки всех ссылок
         const startGen = async () => {
             const resultsDiv = document.getElementById("results"), workingDiv = document.getElementById("workingLinks");
             isRunning = true;
@@ -168,12 +115,9 @@
             document.getElementById("stop").disabled = false;
 
             for (let link of allLinks) {
-                // Пытаемся использовать разные методы для проверки доступности ссылки
-                let result = await checkWithImage(link);
-                if (result.status === "not-working") result = await checkWithFetchHead(link);
-                if (result.status === "not-working") result = await checkWithFetchFull(link);
-                if (result.status === "not-working") result = await checkWithXMLHttpRequest(link);
-                if (result.status === "not-working") result = await checkWithIframe(link);
+                if (!isRunning) break;
+
+                const result = await checkWithFetch(link);
 
                 display(result, resultsDiv);
                 if (result.status === "working") {
@@ -182,7 +126,6 @@
             }
         };
 
-        // Остановка проверки
         const stopGen = () => {
             isRunning = false;
             document.getElementById("start").disabled = false;
