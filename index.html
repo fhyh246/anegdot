@@ -13,7 +13,7 @@
     </style>
 </head>
 <body>
-    <h1>Генератор и проверка ссылок beta</h1>
+    <h1>Генератор и проверка ссылок</h1>
     <button id="start">Начать генерацию</button>
     <button id="stop" disabled>Остановить</button>
     <div class="container">
@@ -33,8 +33,13 @@
         const genURL = () => `${baseURL}/${genStr(2)}/${genStr(2)}/${genStr(16)}.webp/${genStr(8)}-${genStr(4)}-${genStr(4)}-${genStr(4)}-${genStr(12)}/`;
 
         const checkURL = async (url) => {
-            try { const res = await fetch(url, { method: "HEAD" }); return { url, status: res.ok ? "working" : "not-working" }; } 
-            catch { return { url, status: "not-working" }; }
+            try { 
+                const res = await fetch(url, { method: "HEAD", mode: "no-cors" });
+                return { url, status: res.ok ? "working" : "not-working" }; 
+            } 
+            catch { 
+                return { url, status: "not-working" }; 
+            }
         };
 
         const display = (res, div) => {
