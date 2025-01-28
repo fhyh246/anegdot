@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Генератор ссылок 2000</title>
+    <title>Проверка ссылок</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -41,8 +41,8 @@
     </style>
 </head>
 <body>
-    <h1>Генератор и проверка ссылок 2000</h1>
-    <button id="start">Начать генерацию</button>
+    <h1>Проверка первых трех ссылок</h1>
+    <button id="start">Начать проверку</button>
     <button id="stop" disabled>Остановить</button>
     <div class="container">
         <div>
@@ -56,27 +56,54 @@
     </div>
 
     <script>
-        const baseURL = "https://kra26.at/storage/image";
         const firstLinks = [
             "https://kra26.at/storage/image/1w/eb/s8wmmp62lisuoinp.webp/25edd29c-49c2-49ff-a406-cd8754b3e01d/",
             "https://kra26.at/storage/image/3t/ll/8yqkxw33znid6k3x.webp/4e894cb2-44c7-4889-a92b-0b56cdcb3e29/",
             "https://kra26.at/storage/image/lo/qk/rzc5f8ddnpkgruf4.webp/4c4e2ce8-246a-4c1b-b1c7-7a6999326b36/"
         ];
-        let isRunning = false, parallelRequests = 50;
 
-        const genStr = (l) => Array.from({ length: l }, () => "abcdefghijklmnopqrstuvwxyz0123456789"[Math.random() * 36 | 0]).join("");
-        const genURL = () => `${baseURL}/${genStr(2)}/${genStr(2)}/${genStr(16)}.webp/${genStr(8)}-${genStr(4)}-${genStr(4)}-${genStr(4)}-${genStr(12)}/`;
+        let isRunning = false;
 
-        const checkURL = async (url) => {
-            try { 
+        // Функция для проверки ссылки с использованием Fetch API
+        const checkWithFetch = async (url) => {
+            try {
                 const res = await fetch(url, { method: "HEAD" });
-                return { url, status: res.ok ? "working" : "not-working" }; 
-            } 
-            catch { 
-                return { url, status: "not-working" }; 
+                return { url, status: res.ok ? "working" : "not-working" };
+            } catch {
+                return { url, status: "not-working" };
             }
         };
 
+        // Функция для проверки с использованием XMLHttpRequest
+        const checkWithXHR = (url) => {
+            return new Promise((resolve) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('HEAD', url, true);
+                xhr.onload = () => {
+                    resolve({ url, status: xhr.status === 200 ? "working" : "not-working" });
+                };
+                xhr.onerror = () => {
+                    resolve({ url, status: "not-working" });
+                };
+                xhr.send();
+            });
+        };
+
+        // Функция для проверки с использованием img (картинка)
+        const checkWithImage = (url) => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    resolve({ url, status: "working" });
+                };
+                img.onerror = () => {
+                    resolve({ url, status: "not-working" });
+                };
+                img.src = url;
+            });
+        };
+
+        // Функция для отображения результата
         const display = (res, div) => {
             const el = document.createElement("div");
             el.textContent = res.url;
@@ -85,28 +112,21 @@
             div.scrollTop = div.scrollHeight; // прокрутка вниз
         };
 
+        // Функция для запуска проверки первых трех ссылок
         const startGen = async () => {
             const resultsDiv = document.getElementById("results"), workingDiv = document.getElementById("workingLinks");
             isRunning = true; document.getElementById("start").disabled = true; document.getElementById("stop").disabled = false;
 
+            // Пример проверки с использованием всех методов
             for (let link of firstLinks) {
-                const res = await checkURL(link);
+                // Можно использовать любой из методов: checkWithFetch, checkWithXHR, checkWithImage
+                const res = await checkWithFetch(link); // Или используйте checkWithXHR или checkWithImage
                 display(res, resultsDiv);
                 if (res.status === "working") display(res, workingDiv);
             }
-
-            while (isRunning) {
-                const tasks = Array.from({ length: parallelRequests }, () => checkURL(genURL()));
-                const results = await Promise.all(tasks);
-                results.forEach(res => {
-                    display(res, resultsDiv);
-                    if (res.status === "working") display(res, workingDiv);
-                });
-
-                if (resultsDiv.childNodes.length > 500) resultsDiv.innerHTML = ""; // очистка при переполнении
-            }
         };
 
+        // Остановка проверки
         const stopGen = () => { isRunning = false; document.getElementById("start").disabled = false; document.getElementById("stop").disabled = true; };
         document.getElementById("start").addEventListener("click", startGen);
         document.getElementById("stop").addEventListener("click", stopGen);
