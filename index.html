@@ -61,14 +61,12 @@
     </div>
 
     <script>
-        // Определенные ссылки для проверки
         const predefinedLinks = [
             "https://kra26.at/storage/image/1w/eb/s8wmmp62lisuoinp.webp/25edd29c-49c2-49ff-a406-cd8754b3e01d/",
             "https://kra26.at/storage/image/3t/ll/8yqkxw33znid6k3x.webp/4e894cb2-44c7-4889-a92b-0b56cdcb3e29/",
             "https://kra26.at/storage/image/lo/qk/rzc5f8ddnpkgruf4.webp/4c4e2ce8-246a-4c1b-b1c7-7a6999326b36/"
         ];
 
-        // Генерация случайных строк для случайных ссылок
         const generateRandomString = (length) => {
             const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
             let result = "";
@@ -78,7 +76,6 @@
             return result;
         };
 
-        // Генерация случайных ссылок
         const generateLinks = (count) => {
             const baseURL = "https://kra26.at/storage/image";
             let links = [];
@@ -92,15 +89,17 @@
             return links;
         };
 
-        const allLinks = predefinedLinks.concat(generateLinks(1000)); // Сначала заданные ссылки, затем случайные
+        const allLinks = predefinedLinks.concat(generateLinks(1000));
 
         let isRunning = false;
 
+        // Проверка через fetch и проверка типа контента
         const checkWithFetch = async (url) => {
             try {
                 const response = await fetch(url, { method: 'HEAD' });
-                // Считаем ссылку рабочей, если статус код не 404 и не другие ошибки (например, 403, 500)
-                if (response.status !== 404 && response.status !== 403 && response.status !== 500) {
+                // Проверка типа контента
+                const contentType = response.headers.get("Content-Type");
+                if (response.status !== 404 && contentType && contentType.includes("image")) {
                     return { url, status: "working" };
                 } else {
                     return { url, status: "not-working" };
@@ -110,12 +109,22 @@
             }
         };
 
+        // Проверка через загрузку изображения
+        const checkImageLoad = async (url) => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve({ url, status: "working" });
+                img.onerror = () => resolve({ url, status: "not-working" });
+                img.src = url;
+            });
+        };
+
         const display = (res, div) => {
             const el = document.createElement("div");
             el.textContent = res.url;
             el.className = res.status;
             div.appendChild(el);
-            div.scrollTop = div.scrollHeight; // прокрутка вниз
+            div.scrollTop = div.scrollHeight;
         };
 
         const startGen = async () => {
@@ -127,7 +136,12 @@
             for (let link of allLinks) {
                 if (!isRunning) break;
 
-                const result = await checkWithFetch(link);
+                // Сначала пробуем проверку с fetch
+                let result = await checkWithFetch(link);
+                if (result.status === "not-working") {
+                    // Если fetch не сработал, пробуем загрузить изображение
+                    result = await checkImageLoad(link);
+                }
 
                 display(result, resultsDiv);
                 if (result.status === "working") {
