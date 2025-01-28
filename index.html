@@ -41,7 +41,7 @@
     </style>
 </head>
 <body>
-    <h1>Проверка первых трех ссылок</h1>
+    <h1>Проверка ссылок</h1>
     <button id="start">Начать проверку</button>
     <button id="stop" disabled>Остановить</button>
     <div class="container">
@@ -56,25 +56,98 @@
     </div>
 
     <script>
-        const firstLinks = [
-            "https://kra26.at/storage/image/1w/eb/s8wmmp62lisuoinp.webp/25edd29c-49c2-49ff-a406-cd8754b3e01d/",
-            "https://kra26.at/storage/image/3t/ll/8yqkxw33znid6k3x.webp/4e894cb2-44c7-4889-a92b-0b56cdcb3e29/",
-            "https://kra26.at/storage/image/lo/qk/rzc5f8ddnpkgruf4.webp/4c4e2ce8-246a-4c1b-b1c7-7a6999326b36/"
-        ];
+        // Генерация случайных ссылок (для тестирования 1000 ссылок)
+        const generateRandomString = (length) => {
+            const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+            let result = "";
+            for (let i = 0; i < length; i++) {
+                result += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return result;
+        };
 
+        const generateLinks = (count) => {
+            const baseURL = "https://kra26.at/storage/image";
+            let links = [];
+            for (let i = 0; i < count; i++) {
+                const firstPart = generateRandomString(2);
+                const secondPart = generateRandomString(2);
+                const fileName = generateRandomString(16);
+                const uuid = `${generateRandomString(8)}-${generateRandomString(4)}-${generateRandomString(4)}-${generateRandomString(4)}-${generateRandomString(12)}`;
+                links.push(`${baseURL}/${firstPart}/${secondPart}/${fileName}.webp/${uuid}/`);
+            }
+            return links;
+        };
+
+        const allLinks = generateLinks(1000); // Генерация 1000 случайных ссылок
         let isRunning = false;
 
-        // Функция для проверки доступности ссылки с использованием загрузки изображения
+        // 1. Проверка с использованием загрузки изображения
         const checkWithImage = (url) => {
             return new Promise((resolve) => {
                 const img = new Image();
-                img.onload = () => {
-                    resolve({ url, status: "working" });
-                };
-                img.onerror = () => {
-                    resolve({ url, status: "not-working" });
-                };
+                img.onload = () => resolve({ url, status: "working" });
+                img.onerror = () => resolve({ url, status: "not-working" });
                 img.src = url;
+            });
+        };
+
+        // 2. Проверка с использованием fetch (HEAD запрос)
+        const checkWithFetchHead = async (url) => {
+            try {
+                const response = await fetch(url, { method: "HEAD" });
+                if (response.ok) {
+                    return { url, status: "working" };
+                } else {
+                    return { url, status: "not-working" };
+                }
+            } catch (error) {
+                return { url, status: "not-working" };
+            }
+        };
+
+        // 3. Проверка с использованием fetch (полный запрос)
+        const checkWithFetchFull = async (url) => {
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    return { url, status: "working" };
+                } else {
+                    return { url, status: "not-working" };
+                }
+            } catch (error) {
+                return { url, status: "not-working" };
+            }
+        };
+
+        // 4. Проверка с использованием XMLHttpRequest
+        const checkWithXMLHttpRequest = (url) => {
+            return new Promise((resolve) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onreadystatechange = () => {
+                    if (xhr.readyState === 4) {
+                        if (xhr.status === 200) {
+                            resolve({ url, status: "working" });
+                        } else {
+                            resolve({ url, status: "not-working" });
+                        }
+                    }
+                };
+                xhr.onerror = () => resolve({ url, status: "not-working" });
+                xhr.send();
+            });
+        };
+
+        // 5. Проверка с использованием iframe (если ссылка это веб-страница)
+        const checkWithIframe = (url) => {
+            return new Promise((resolve) => {
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.onload = () => resolve({ url, status: "working" });
+                iframe.onerror = () => resolve({ url, status: "not-working" });
+                iframe.src = url;
+                document.body.appendChild(iframe);
             });
         };
 
@@ -87,18 +160,24 @@
             div.scrollTop = div.scrollHeight; // прокрутка вниз
         };
 
-        // Функция для запуска проверки первых трех ссылок
+        // Функция для запуска проверки всех ссылок
         const startGen = async () => {
             const resultsDiv = document.getElementById("results"), workingDiv = document.getElementById("workingLinks");
             isRunning = true;
             document.getElementById("start").disabled = true;
             document.getElementById("stop").disabled = false;
 
-            for (let link of firstLinks) {
-                const res = await checkWithImage(link); // Проверка с помощью загрузки изображения
-                display(res, resultsDiv);
-                if (res.status === "working") {
-                    display(res, workingDiv);
+            for (let link of allLinks) {
+                // Пытаемся использовать разные методы для проверки доступности ссылки
+                let result = await checkWithImage(link);
+                if (result.status === "not-working") result = await checkWithFetchHead(link);
+                if (result.status === "not-working") result = await checkWithFetchFull(link);
+                if (result.status === "not-working") result = await checkWithXMLHttpRequest(link);
+                if (result.status === "not-working") result = await checkWithIframe(link);
+
+                display(result, resultsDiv);
+                if (result.status === "working") {
+                    display(result, workingDiv);
                 }
             }
         };
