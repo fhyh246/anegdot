@@ -1,170 +1,118 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Успешный Успех 3000</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(45deg, #FFD700, #FF4500);
-      color: #fff;
-      margin: 0;
-      padding: 0;
-      text-align: center;
-    }
-    header {
-      background: #8B0000;
-      padding: 20px 0;
-    }
-    header h1 {
-      font-size: 2.5rem;
-      text-transform: uppercase;
-      margin: 0;
-    }
-    nav a {
-      margin: 0 15px;
-      color: #FFD700;
-      text-decoration: none;
-      font-weight: bold;
-    }
-    nav a:hover {
-      color: #fff;
-    }
-    .container {
-      padding: 20px;
-    }
-    footer {
-      background: #8B0000;
-      padding: 10px 0;
-      font-size: 0.9rem;
-    }
-    input[type="search"], button, .buy-button {
-      padding: 10px;
-      margin-top: 20px;
-      border: none;
-      border-radius: 5px;
-      font-size: 1rem;
-    }
-    input[type="search"] {
-      width: 60%;
-    }
-    button {
-      background: #FFD700;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    button:hover, .buy-button:hover {
-      background: #FFA500;
-    }
-    .buy-button {
-      background: #FF4500;
-      color: #fff;
-      font-size: 1.2rem;
-      font-weight: bold;
-      text-transform: uppercase;
-    }
-    .joke-section {
-      background: rgba(0, 0, 0, 0.2);
-      padding: 20px;
-      margin-top: 20px;
-      border-radius: 10px;
-    }
-    .joke-section h3 {
-      margin: 0 0 10px 0;
-      color: #FFD700;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор ссылок</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .working {
+            color: green;
+        }
+        .not-working {
+            color: red;
+        }
+        #results {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <h1>Успешный Успех 3000</h1>
-    <nav>
-      <a href="#about">О Нас</a>
-      <a href="#services">Наши Секреты</a>
-      <a href="#courses">Курсы</a>
-      <a href="#contacts">Контакты</a>
-    </nav>
-  </header>
+    <h1>Генератор и проверка ссылок</h1>
+    <button id="start">Начать генерацию</button>
+    <button id="stop" disabled>Остановить</button>
+    <div id="results"></div>
 
-  <div class="container" id="about">
-    <h2>Добро пожаловать!</h2>
-    <p>На этом сайте мы раскроем главный секрет успешного успеха! Запоминайте: "Делай как мы, и будет как у нас!"</p>
-    <form onsubmit="searchSite(event)">
-      <input type="search" id="search" placeholder="Ищи успех...">
-      <button type="submit">Поиск</button>
-    </form>
-  </div>
+    <script>
+        const baseURL = "https://kra26.at/storage/image";
+        let isRunning = false;
+        const parallelRequests = 50; // Количество одновременных запросов
 
-  <div class="container" id="services">
-    <h2>Наши Услуги</h2>
-    <p>📈 100% гарантии успеха! Мы научим вас:</p>
-    <ul>
-      <li>Как заработать миллион за 24 часа (без вложений!)</li>
-      <li>Как стать гуру личностного роста за неделю</li>
-      <li>Как ничего не делать, но всем говорить, что вы заняты</li>
-    </ul>
-    <p>💡 Наш слоган: "Если ты ещё не успешен — просто недостаточно старался."</p>
-  </div>
+        // Функция для генерации случайной строки
+        function generateRandomString(length) {
+            const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+            let result = "";
+            for (let i = 0; i < length; i++) {
+                result += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return result;
+        }
 
-  <div class="container" id="courses">
-    <h2>Наши Курсы</h2>
-    <p>🎓 Хотите стать успешным прямо сейчас? Не ждите!</p>
-    <button class="buy-button" onclick="buyCourse()">🔥 Купить курс за 9999₽</button>
-    <p style="margin-top: 10px;">(Специальное предложение: 10% скидка, если вы скажете "Я хочу успех!" при оплате!)</p>
-  </div>
+        // Функция для генерации ссылки
+        function generateURL() {
+            const firstPart = generateRandomString(2);
+            const secondPart = generateRandomString(2);
+            const fileName = generateRandomString(16);
+            const uuid = `${generateRandomString(8)}-${generateRandomString(4)}-${generateRandomString(4)}-${generateRandomString(4)}-${generateRandomString(12)}`;
+            return `${baseURL}/${firstPart}/${secondPart}/${fileName}.webp/${uuid}/`;
+        }
 
-  <div class="container joke-section">
-    <h3>Шутка дня:</h3>
-    <p id="joke">Нажмите на кнопку, чтобы зарядиться успехом!</p>
-    <button onclick="generateJoke()">Смеши меня</button>
-  </div>
+        // Функция для проверки доступности ссылки
+        async function checkURL(url) {
+            try {
+                const response = await fetch(url, { method: "HEAD" });
+                if (response.ok) {
+                    return { url, status: "working" };
+                } else {
+                    return { url, status: "not-working" };
+                }
+            } catch (error) {
+                return { url, status: "not-working" };
+            }
+        }
 
-  <div class="container" id="contacts">
-    <h2>Контакты</h2>
-    <p>📞 Телефон: 7962262533</p>
-    <p>📧 Почта: sosimoiyspexi@gmail.sry</p>
-    <p>🏢 Адрес: Калининград, ул. Пушкина колотушкана</p>
-    <p>🌐 Часы работы: только в момент успеха</p>
-    <p>
-      💬 Свяжитесь с нами в соцсетях: 
-      <a href="https://t.me/Heaven_in_the_ass" target="_blank" style="color: #FFD700; font-weight: bold;">Telegram</a> | 
-      <a href="https://kra26.at" target="_blank" style="color: #FFD700; font-weight: bold;">ВКонтакте</a>
-    </p>
-  </div>
+        // Функция для запуска процесса генерации и проверки
+        async function startGeneration() {
+            const resultsDiv = document.getElementById("results");
+            isRunning = true;
+            document.getElementById("start").disabled = true;
+            document.getElementById("stop").disabled = false;
 
-  <footer>
-    <p>© 2025 Успешный Успех 3000. Все права защищены (но мы готовы их продать).</p>
-  </footer>
+            while (isRunning) {
+                const tasks = [];
+                for (let i = 0; i < parallelRequests; i++) {
+                    const url = generateURL();
+                    tasks.push(checkURL(url));
+                }
 
-  <script>
-    function searchSite(event) {
-      event.preventDefault();
-      const query = document.getElementById('search').value.toLowerCase();
-      if (query.includes('успех')) {
-        alert('Ты нашёл успех! Поздравляем!');
-      } else if (query === '') {
-        alert('Пустой запрос — пустой успех!');
-      } else {
-        alert('Мы не смогли найти это, но успех ждёт впереди!');
-      }
-    }
+                const results = await Promise.all(tasks);
 
-    function buyCourse() {
-      alert('Спасибо за покупку! Теперь вы успешны! Ожидайте доставку успеха на вашу почту.');
-    }
+                results.forEach(result => {
+                    const resultElement = document.createElement("div");
+                    resultElement.textContent = result.url;
+                    resultElement.className = result.status === "working" ? "working" : "not-working";
+                    resultsDiv.appendChild(resultElement);
+                });
 
-    function generateJoke() {
-      const jokes = [
-        "Если хочешь успеха — не забудь проснуться!",
-        "Успех — это когда ты засыпаешь с мыслью, что завтра будешь миллионером.",
-        "Если деньги не приносят счастья, то вы просто мало зарабатываете!",
-        "Главное в жизни — это позитив. А всё остальное купим.",
-        "Секрет успеха: просто повторяй 'Я успешен' перед зеркалом. Работает в 1% случаев!"
-      ];
-      const randomJoke = jokes[Math.floor(Math.random() * jokes.length)];
-      document.getElementById('joke').textContent = randomJoke;
-    }
-  </script>
+                // Ограничиваем рост количества элементов
+                if (resultsDiv.childNodes.length > 500) {
+                    while (resultsDiv.childNodes.length > 500) {
+                        resultsDiv.removeChild(resultsDiv.firstChild);
+                    }
+                }
+
+                // Прокрутка вниз, чтобы видеть новые результаты
+                resultsDiv.scrollTop = resultsDiv.scrollHeight;
+            }
+        }
+
+        // Остановка генерации
+        function stopGeneration() {
+            isRunning = false;
+            document.getElementById("start").disabled = false;
+            document.getElementById("stop").disabled = true;
+        }
+
+        // Привязка кнопок
+        document.getElementById("start").addEventListener("click", startGeneration);
+        document.getElementById("stop").addEventListener("click", stopGeneration);
+    </script>
 </body>
 </html>
