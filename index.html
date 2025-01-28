@@ -5,114 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Генератор ссылок</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        .working {
-            color: green;
-        }
-        .not-working {
-            color: red;
-        }
-        #results {
-            margin-top: 20px;
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid #ccc;
-            padding: 10px;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .working { color: green; }
+        .not-working { color: red; }
+        #results, #workingLinks { margin-top: 20px; max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; }
+        .container { display: flex; gap: 20px; }
     </style>
 </head>
 <body>
     <h1>Генератор и проверка ссылок</h1>
     <button id="start">Начать генерацию</button>
     <button id="stop" disabled>Остановить</button>
-    <div id="results"></div>
-
+    <div class="container">
+        <div><h2>Все ссылки</h2><div id="results"></div></div>
+        <div><h2>Рабочие ссылки</h2><div id="workingLinks"></div></div>
+    </div>
     <script>
         const baseURL = "https://kra26.at/storage/image";
-        let isRunning = false;
-        const parallelRequests = 50; // Количество одновременных запросов
+        const firstLinks = [
+            "https://kra26.at/storage/image/1w/eb/s8wmmp62lisuoinp.webp/25edd29c-49c2-49ff-a406-cd8754b3e01d/",
+            "https://kra26.at/storage/image/3t/ll/8yqkxw33znid6k3x.webp/4e894cb2-44c7-4889-a92b-0b56cdcb3e29/",
+            "https://kra26.at/storage/image/lo/qk/rzc5f8ddnpkgruf4.webp/4c4e2ce8-246a-4c1b-b1c7-7a6999326b36/"
+        ];
+        let isRunning = false, parallelRequests = 100;
 
-        // Функция для генерации случайной строки
-        function generateRandomString(length) {
-            const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-            let result = "";
-            for (let i = 0; i < length; i++) {
-                result += chars[Math.floor(Math.random() * chars.length)];
+        const genStr = (l) => Array.from({ length: l }, () => "abcdefghijklmnopqrstuvwxyz0123456789"[Math.random() * 36 | 0]).join("");
+        const genURL = () => `${baseURL}/${genStr(2)}/${genStr(2)}/${genStr(16)}.webp/${genStr(8)}-${genStr(4)}-${genStr(4)}-${genStr(4)}-${genStr(12)}/`;
+
+        const checkURL = async (url) => {
+            try { const res = await fetch(url, { method: "HEAD" }); return { url, status: res.ok ? "working" : "not-working" }; } 
+            catch { return { url, status: "not-working" }; }
+        };
+
+        const display = (res, div) => {
+            const el = document.createElement("div");
+            el.textContent = res.url;
+            el.className = res.status;
+            div.appendChild(el);
+        };
+
+        const startGen = async () => {
+            const resultsDiv = document.getElementById("results"), workingDiv = document.getElementById("workingLinks");
+            isRunning = true; document.getElementById("start").disabled = true; document.getElementById("stop").disabled = false;
+
+            for (let link of firstLinks) {
+                const res = await checkURL(link);
+                display(res, resultsDiv);
+                if (res.status === "working") display(res, workingDiv);
             }
-            return result;
-        }
-
-        // Функция для генерации ссылки
-        function generateURL() {
-            const firstPart = generateRandomString(2);
-            const secondPart = generateRandomString(2);
-            const fileName = generateRandomString(16);
-            const uuid = `${generateRandomString(8)}-${generateRandomString(4)}-${generateRandomString(4)}-${generateRandomString(4)}-${generateRandomString(12)}`;
-            return `${baseURL}/${firstPart}/${secondPart}/${fileName}.webp/${uuid}/`;
-        }
-
-        // Функция для проверки доступности ссылки
-        async function checkURL(url) {
-            try {
-                const response = await fetch(url, { method: "HEAD" });
-                if (response.ok) {
-                    return { url, status: "working" };
-                } else {
-                    return { url, status: "not-working" };
-                }
-            } catch (error) {
-                return { url, status: "not-working" };
-            }
-        }
-
-        // Функция для запуска процесса генерации и проверки
-        async function startGeneration() {
-            const resultsDiv = document.getElementById("results");
-            isRunning = true;
-            document.getElementById("start").disabled = true;
-            document.getElementById("stop").disabled = false;
 
             while (isRunning) {
-                const tasks = [];
-                for (let i = 0; i < parallelRequests; i++) {
-                    const url = generateURL();
-                    tasks.push(checkURL(url));
-                }
-
+                const tasks = Array.from({ length: parallelRequests }, () => checkURL(genURL()));
                 const results = await Promise.all(tasks);
-
-                results.forEach(result => {
-                    const resultElement = document.createElement("div");
-                    resultElement.textContent = result.url;
-                    resultElement.className = result.status === "working" ? "working" : "not-working";
-                    resultsDiv.appendChild(resultElement);
+                results.forEach(res => {
+                    display(res, resultsDiv);
+                    if (res.status === "working") display(res, workingDiv);
                 });
-
-                // Ограничиваем рост количества элементов
-                if (resultsDiv.childNodes.length > 500) {
-                    while (resultsDiv.childNodes.length > 500) {
-                        resultsDiv.removeChild(resultsDiv.firstChild);
-                    }
-                }
-
-                // Прокрутка вниз, чтобы видеть новые результаты
-                resultsDiv.scrollTop = resultsDiv.scrollHeight;
+                if (resultsDiv.childNodes.length > 500) resultsDiv.innerHTML = "";
             }
-        }
+        };
 
-        // Остановка генерации
-        function stopGeneration() {
-            isRunning = false;
-            document.getElementById("start").disabled = false;
-            document.getElementById("stop").disabled = true;
-        }
-
-        // Привязка кнопок
-        document.getElementById("start").addEventListener("click", startGeneration);
-        document.getElementById("stop").addEventListener("click", stopGeneration);
+        const stopGen = () => { isRunning = false; document.getElementById("start").disabled = false; document.getElementById("stop").disabled = true; };
+        document.getElementById("start").addEventListener("click", startGen);
+        document.getElementById("stop").addEventListener("click", stopGen);
     </script>
 </body>
 </html>
