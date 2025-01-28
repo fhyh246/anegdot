@@ -119,8 +119,8 @@
 
             // Пример проверки с использованием всех методов
             for (let link of firstLinks) {
-                // Можно использовать любой из методов: checkWithFetch, checkWithXHR, checkWithImage
-                const res = await checkWithFetch(link); // Или используйте checkWithXHR или checkWithImage
+                // Пробуем проверку с Fetch API
+                const res = await checkWithFetch(link); // Используйте `checkWithXHR(link)` или `checkWithImage(link)` для других методов
                 display(res, resultsDiv);
                 if (res.status === "working") display(res, workingDiv);
             }
