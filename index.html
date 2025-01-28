@@ -64,32 +64,7 @@
 
         let isRunning = false;
 
-        // Функция для проверки ссылки с использованием Fetch API
-        const checkWithFetch = async (url) => {
-            try {
-                const res = await fetch(url, { method: "HEAD" });
-                return { url, status: res.ok ? "working" : "not-working" };
-            } catch {
-                return { url, status: "not-working" };
-            }
-        };
-
-        // Функция для проверки с использованием XMLHttpRequest
-        const checkWithXHR = (url) => {
-            return new Promise((resolve) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open('HEAD', url, true);
-                xhr.onload = () => {
-                    resolve({ url, status: xhr.status === 200 ? "working" : "not-working" });
-                };
-                xhr.onerror = () => {
-                    resolve({ url, status: "not-working" });
-                };
-                xhr.send();
-            });
-        };
-
-        // Функция для проверки с использованием img (картинка)
+        // Функция для проверки доступности ссылки с использованием загрузки изображения
         const checkWithImage = (url) => {
             return new Promise((resolve) => {
                 const img = new Image();
@@ -115,19 +90,26 @@
         // Функция для запуска проверки первых трех ссылок
         const startGen = async () => {
             const resultsDiv = document.getElementById("results"), workingDiv = document.getElementById("workingLinks");
-            isRunning = true; document.getElementById("start").disabled = true; document.getElementById("stop").disabled = false;
+            isRunning = true;
+            document.getElementById("start").disabled = true;
+            document.getElementById("stop").disabled = false;
 
-            // Пример проверки с использованием всех методов
             for (let link of firstLinks) {
-                // Пробуем проверку с Fetch API
-                const res = await checkWithFetch(link); // Используйте `checkWithXHR(link)` или `checkWithImage(link)` для других методов
+                const res = await checkWithImage(link); // Проверка с помощью загрузки изображения
                 display(res, resultsDiv);
-                if (res.status === "working") display(res, workingDiv);
+                if (res.status === "working") {
+                    display(res, workingDiv);
+                }
             }
         };
 
         // Остановка проверки
-        const stopGen = () => { isRunning = false; document.getElementById("start").disabled = false; document.getElementById("stop").disabled = true; };
+        const stopGen = () => {
+            isRunning = false;
+            document.getElementById("start").disabled = false;
+            document.getElementById("stop").disabled = true;
+        };
+
         document.getElementById("start").addEventListener("click", startGen);
         document.getElementById("stop").addEventListener("click", stopGen);
     </script>
