@@ -4,7 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Конфигуратор ПК</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            margin: auto;
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        .component {
+            margin: 10px 0;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        #totalPrice {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e63946;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -62,6 +99,120 @@
         <h2>Общая стоимость: <span id="totalPrice">0</span> ₽</h2>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        // Данные комплектующих
+        const components = {
+            cpu: [
+                { name: "Intel Core i5-12400F", price: 15000 },
+                { name: "Intel Core i7-13700K", price: 35000 },
+                { name: "AMD Ryzen 5 5600X", price: 18000 },
+                { name: "AMD Ryzen 7 5800X", price: 28000 },
+                { name: "Intel Core i9-13900K", price: 65000 },
+                { name: "AMD Ryzen 9 7900X", price: 60000 },
+                { name: "Intel Core i3-12100F", price: 10000 },
+                { name: "AMD Ryzen 3 3100", price: 8000 },
+                { name: "Intel Xeon W-2295", price: 90000 },
+                { name: "AMD Threadripper 3960X", price: 120000 }
+            ],
+            motherboard: [
+                { name: "MSI B760 GAMING PLUS WIFI", price: 12000 },
+                { name: "ASUS ROG STRIX B550-F", price: 14000 },
+                { name: "Gigabyte Z690 AORUS", price: 20000 },
+                { name: "ASRock B450M Steel Legend", price: 7000 },
+                { name: "MSI MPG Z490 GAMING EDGE WIFI", price: 15000 },
+                { name: "Gigabyte X570 AORUS ELITE", price: 16000 },
+                { name: "ASUS TUF Z590-PLUS WIFI", price: 18000 },
+                { name: "Biostar Z590GTA", price: 11000 },
+                { name: "ASRock Z490 Steel Legend", price: 13000 },
+                { name: "MSI MAG B550 TOMAHAWK WIFI", price: 14000 }
+            ],
+            gpu: [
+                { name: "RTX 4060 Ti", price: 50000 },
+                { name: "RTX 4070 Super", price: 70000 },
+                { name: "RX 7900 XT", price: 90000 },
+                { name: "RTX 3080", price: 80000 },
+                { name: "RTX 3090", price: 130000 },
+                { name: "RTX 4070 Ti", price: 120000 },
+                { name: "RX 6700 XT", price: 55000 },
+                { name: "RX 6800 XT", price: 75000 },
+                { name: "RTX 2060 Super", price: 40000 },
+                { name: "GTX 1660 Ti", price: 25000 }
+            ],
+            ram: [
+                { name: "16GB DDR4 3200MHz", price: 5000 },
+                { name: "32GB DDR4 3600MHz", price: 10000 },
+                { name: "16GB DDR5 5600MHz", price: 12000 },
+                { name: "64GB DDR4 3200MHz", price: 20000 },
+                { name: "8GB DDR4 2666MHz", price: 2500 },
+                { name: "16GB DDR4 4400MHz", price: 9000 },
+                { name: "64GB DDR5 6000MHz", price: 24000 },
+                { name: "32GB DDR4 2400MHz", price: 7000 },
+                { name: "8GB DDR4 2133MHz", price: 1500 },
+                { name: "32GB DDR5 6400MHz", price: 18000 }
+            ],
+            storage: [
+                { name: "SSD M.2 1TB NVMe", price: 8000 },
+                { name: "HDD 2TB", price: 6000 },
+                { name: "SSD 500GB SATA", price: 4000 },
+                { name: "SSD M.2 2TB NVMe", price: 15000 },
+                { name: "HDD 4TB", price: 10000 },
+                { name: "SSD M.2 500GB NVMe", price: 5000 },
+                { name: "SSD 256GB SATA", price: 3000 },
+                { name: "HDD 6TB", price: 12000 },
+                { name: "SSD 1TB SATA", price: 7000 },
+                { name: "HDD 1TB", price: 4000 }
+            ],
+            psu: [
+                { name: "650W 80+ Gold", price: 8000 },
+                { name: "750W 80+ Platinum", price: 12000 },
+                { name: "850W 80+ Titanium", price: 15000 },
+                { name: "1000W 80+ Gold", price: 14000 },
+                { name: "750W 80+ Gold", price: 9000 },
+                { name: "550W 80+ Bronze", price: 5000 },
+                { name: "1200W 80+ Platinum", price: 17000 },
+                { name: "850W 80+ Gold", price: 13000 },
+                { name: "650W 80+ Bronze", price: 6000 },
+                { name: "750W 80+ Bronze", price: 7000 }
+            ],
+            case: [
+                { name: "Deepcool Matrexx 55", price: 6000 },
+                { name: "NZXT H510", price: 9000 },
+                { name: "Fractal Design Meshify C", price: 10000 },
+                { name: "Corsair iCUE 4000X", price: 12000 },
+                { name: "Cooler Master MasterBox Q300L", price: 5000 },
+                { name: "Phanteks Eclipse P400A",
+                                { name: "Phanteks Eclipse P400A", price: 7000 },
+                { name: "Lian Li PC-O11 Dynamic", price: 12000 },
+                { name: "Cooler Master H500", price: 8000 },
+                { name: "Thermaltake View 71", price: 11000 },
+                { name: "MSI MPG GUNGNIR 110R", price: 15000 }
+            ]
+        };
+
+        // Функция загрузки данных в выпадающие списки
+        function loadOptions() {
+            for (const category in components) {
+                const select = document.getElementById(category);
+                components[category].forEach(item => {
+                    const option = document.createElement("option");
+                    option.text = `${item.name} - ${item.price} ₽`;
+                    option.value = item.price;
+                    select.appendChild(option);
+                });
+            }
+        }
+
+        // Функция расчета общей стоимости
+        function calculateTotal() {
+            let total = 0;
+            document.querySelectorAll("select").forEach(select => {
+                total += Number(select.value);
+            });
+            document.getElementById("totalPrice").textContent = total;
+        }
+
+        // Загружаем данные при загрузке страницы
+        document.addEventListener("DOMContentLoaded", loadOptions);
+    </script>
 </body>
 </html>
