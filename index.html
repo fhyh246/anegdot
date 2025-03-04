@@ -48,7 +48,7 @@
             constructor() {
                 this.radius = 15;
                 this.angle = Math.random() * Math.PI * 2;
-                this.speed = 3;
+                this.speed = 4;
                 this.x = centerX;
                 this.y = centerY;
                 this.dx = Math.cos(this.angle) * this.speed;
@@ -60,10 +60,18 @@
                 this.x += this.dx;
                 this.y += this.dy;
 
+                // Проверка коллизии со стенами
+                if (this.x - this.radius < 0 || this.x + this.radius > width) {
+                    this.dx *= -1;
+                }
+                if (this.y - this.radius < 0 || this.y + this.radius > height) {
+                    this.dy *= -1;
+                }
+
                 // Коллизия с кругами
                 for (let circle of circles) {
                     let dist = Math.hypot(this.x - centerX, this.y - centerY);
-                    if (dist + this.radius > circle.radius) {
+                    if (dist + this.radius > circle.radius - 3 && dist - this.radius < circle.radius + 3) {
                         let holeX = centerX + Math.cos(circle.holeAngle) * circle.radius;
                         let holeY = centerY + Math.sin(circle.holeAngle) * circle.radius;
 
@@ -100,13 +108,18 @@
                 this.radius = radius;
                 this.holeAngle = Math.random() * Math.PI * 2;
                 this.rotationSpeed = speed;
+                this.destroying = false;
             }
 
             update() {
-                this.holeAngle += this.rotationSpeed;
+                if (!this.destroying) {
+                    this.holeAngle += this.rotationSpeed;
+                }
             }
 
             draw() {
+                if (this.destroying) return;
+
                 ctx.strokeStyle = "darkviolet";
                 ctx.lineWidth = 3;
                 ctx.beginPath();
@@ -125,13 +138,15 @@
         function destroyCircle(circle) {
             let index = circles.indexOf(circle);
             if (index !== -1) {
+                circles[index].destroying = true;
                 let explosion = { radius: circle.radius, alpha: 1 };
-                circles.splice(index, 1);
-                animateExplosion(explosion);
+                animateExplosion(explosion, () => {
+                    circles.splice(index, 1);
+                });
             }
         }
 
-        function animateExplosion(explosion) {
+        function animateExplosion(explosion, callback) {
             function animate() {
                 ctx.globalAlpha = explosion.alpha;
                 ctx.strokeStyle = "darkviolet";
@@ -146,6 +161,8 @@
 
                 if (explosion.alpha > 0) {
                     requestAnimationFrame(animate);
+                } else {
+                    callback();
                 }
             }
             animate();
@@ -182,7 +199,7 @@
         function gameLoop() {
             update();
             draw();
-            requestAnimationFrame(gameLoop);
+            setTimeout(() => requestAnimationFrame(gameLoop), 1000 / 120);
         }
 
         function init() {
