@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Музыкальный Визуализатор с Микрофоном</title>
+    <title>Музыкальный Визуализатор</title>
     <style>
         body {
             margin: 0;
@@ -17,7 +17,7 @@
 </head>
 <body>
     <canvas id="visualizer"></canvas>
-    
+
     <script>
         const canvas = document.getElementById('visualizer');
         const ctx = canvas.getContext('2d');
@@ -26,13 +26,13 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        // Получаем доступ к микрофону
-        navigator.mediaDevices.getUserMedia({ audio: true })
+        // Запрашиваем доступ к виртуальному микрофону
+        navigator.mediaDevices.getUserMedia({ audio: { deviceId: "your_virtual_microphone_device_id" } })
             .then(stream => {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256;
-                bufferLength = analyser.frequencyBinCount;
+                analyser.fftSize = 256;  // Размер FFT, который будет использоваться для анализа частоты
+                bufferLength = analyser.frequencyBinCount;  // Количество байтов в анализе частоты
                 dataArray = new Uint8Array(bufferLength);
 
                 const source = audioContext.createMediaStreamSource(stream);
@@ -47,24 +47,25 @@
 
         // Отображение визуализатора
         function drawVisualizer() {
-            analyser.getByteFrequencyData(dataArray);
+            analyser.getByteFrequencyData(dataArray); // Получаем данные для анализа
 
             ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, canvas.width, canvas.height);  // Очищаем холст
 
             const barWidth = (canvas.width / bufferLength) * 2.5;
             let barHeight;
             let x = 0;
 
+            // Рисуем прямоугольники на основе данных частоты
             for (let i = 0; i < bufferLength; i++) {
                 barHeight = dataArray[i];
-                ctx.fillStyle = `rgb(${barHeight + 100}, 50, 255)`;
-                ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                ctx.fillStyle = `rgb(${barHeight + 100}, 50, 255)`;  // Цвет для баров
+                ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);  // Рисуем бар
 
                 x += barWidth + 1;
             }
 
-            requestAnimationFrame(drawVisualizer);
+            requestAnimationFrame(drawVisualizer);  // Рекурсивный вызов для плавной анимации
         }
     </script>
 </body>
