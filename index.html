@@ -27,27 +27,40 @@
         canvas.height = window.innerHeight;
 
         // Запрашиваем доступ к виртуальному микрофону
-        navigator.mediaDevices.getUserMedia({ audio: { deviceId: "your_virtual_microphone_device_id" } })
-            .then(stream => {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256;  // Размер FFT, который будет использоваться для анализа частоты
-                bufferLength = analyser.frequencyBinCount;  // Количество байтов в анализе частоты
-                dataArray = new Uint8Array(bufferLength);
+        navigator.mediaDevices.enumerateDevices().then(devices => {
+            // Найди виртуальный микрофон в списке устройств
+            const virtualMic = devices.find(device => device.kind === 'audioinput' && device.label.toLowerCase().includes("virtual"));
+            
+            if (!virtualMic) {
+                console.error("Виртуальный микрофон не найден!");
+                return;
+            }
 
-                const source = audioContext.createMediaStreamSource(stream);
-                source.connect(analyser);
-                analyser.connect(audioContext.destination);
+            // Запрашиваем доступ к виртуальному микрофону
+            navigator.mediaDevices.getUserMedia({ audio: { deviceId: virtualMic.deviceId } })
+                .then(stream => {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 256;  // Размер FFT для анализа
+                    bufferLength = analyser.frequencyBinCount;  // Количество частотных данных
+                    dataArray = new Uint8Array(bufferLength);  // Массив для хранения данных частот
 
-                drawVisualizer();
-            })
-            .catch(err => {
-                console.log("Ошибка доступа к микрофону: " + err);
-            });
+                    const source = audioContext.createMediaStreamSource(stream);
+                    source.connect(analyser);
+                    analyser.connect(audioContext.destination);
 
-        // Отображение визуализатора
+                    drawVisualizer();
+                })
+                .catch(err => {
+                    console.error("Ошибка доступа к микрофону: " + err);
+                });
+        }).catch(err => {
+            console.error("Ошибка при перечислении устройств: " + err);
+        });
+
+        // Функция рисования визуализатора
         function drawVisualizer() {
-            analyser.getByteFrequencyData(dataArray); // Получаем данные для анализа
+            analyser.getByteFrequencyData(dataArray);  // Получаем данные для анализа частот
 
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width, canvas.height);  // Очищаем холст
@@ -56,10 +69,10 @@
             let barHeight;
             let x = 0;
 
-            // Рисуем прямоугольники на основе данных частоты
+            // Рисуем прямоугольники на основе данных частот
             for (let i = 0; i < bufferLength; i++) {
                 barHeight = dataArray[i];
-                ctx.fillStyle = `rgb(${barHeight + 100}, 50, 255)`;  // Цвет для баров
+                ctx.fillStyle = `rgb(${barHeight + 100}, 50, 255)`;  // Цвет прямоугольников
                 ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);  // Рисуем бар
 
                 x += barWidth + 1;
