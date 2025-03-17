@@ -1,120 +1,70 @@
-Ю<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Музыкальный Визуализатор</title>
+    <title>Какие пары можно пропустить?</title>
     <style>
         body {
-            text-align: center;
-            background-color: #111;
-            color: white;
             font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #222;
+            color: white;
         }
-        canvas {
-            display: block;
-            margin: 20px auto;
-            background: black;
-            border-radius: 10px;
-        }
-        .controls {
-            margin-top: 10px;
-        }
-        input, select {
+        input, button {
             margin: 5px;
-            padding: 8px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #subjects {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
     </style>
 </head>
 <body>
 
-    <h1>Музыкальный Визуализатор</h1>
+    <h1>Какие пары можно пропустить?</h1>
+    
+    <label for="count">Сколько всего пар?</label>
+    <input type="number" id="count" min="1">
+    <button onclick="generateInputs()">Создать список</button>
 
-    <button onclick="startVisualization()">🎤 Включить микрофон</button>
+    <div id="subjects"></div>
+    
+    <button onclick="removeRandom()" id="removeBtn" style="display:none;">Убрать лишнее</button>
 
-    <br>
-
-    <canvas id="visualizer"></canvas>
-
-    <div class="controls">
-        <label>Цвет: <input type="color" id="colorPicker" value="#00ffcc"></label>
-        <label>Размер: <input type="range" id="sizeRange" min="10" max="100" value="50"></label>
-        <label>Форма:
-            <select id="shapeSelect">
-                <option value="bars">Полосы</option>
-                <option value="circles">Круги</option>
-            </select>
-        </label>
-    </div>
+    <h2 id="result"></h2>
 
     <script>
-        let audioContext, analyser, dataArray, canvas, ctx;
-        let color = "#00ffcc";
-        let shape = "bars";
-        let sizeMultiplier = 50;
+        function generateInputs() {
+            let count = document.getElementById('count').value;
+            let subjectsDiv = document.getElementById('subjects');
+            subjectsDiv.innerHTML = '';
 
-        function startVisualization() {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(stream => {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    analyser = audioContext.createAnalyser();
-                    let source = audioContext.createMediaStreamSource(stream);
-                    source.connect(analyser);
-                    analyser.fftSize = 256;
-                    let bufferLength = analyser.frequencyBinCount;
-                    dataArray = new Uint8Array(bufferLength);
-
-                    canvas = document.getElementById("visualizer");
-                    ctx = canvas.getContext("2d");
-                    canvas.width = window.innerWidth * 0.8;
-                    canvas.height = 300;
-
-                    visualize();
-                })
-                .catch(err => {
-                    alert("Ошибка доступа к микрофону: " + err);
-                });
-        }
-
-        function visualize() {
-            requestAnimationFrame(visualize);
-            analyser.getByteFrequencyData(dataArray);
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "#000";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = color;
-
-            let barWidth = (canvas.width / dataArray.length) * 2.5;
-            let radius = sizeMultiplier;
-
-            if (shape === "bars") {
-                for (let i = 0; i < dataArray.length; i++) {
-                    let barHeight = dataArray[i] * (sizeMultiplier / 50);
-                    let x = i * barWidth;
-                    ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-                }
-            } else if (shape === "circles") {
-                let centerX = canvas.width / 2;
-                let centerY = canvas.height / 2;
-                let maxRadius = Math.max(...dataArray) * (sizeMultiplier / 100);
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, maxRadius, 0, Math.PI * 2);
-                ctx.fill();
+            for (let i = 0; i < count; i++) {
+                let input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = 'Название предмета ' + (i + 1);
+                subjectsDiv.appendChild(input);
             }
+            
+            document.getElementById('removeBtn').style.display = 'block';
         }
 
-        document.getElementById("colorPicker").addEventListener("input", (e) => {
-            color = e.target.value;
-        });
+        function removeRandom() {
+            let inputs = document.querySelectorAll('#subjects input');
+            let subjects = Array.from(inputs).map(input => input.value).filter(v => v.trim() !== '');
 
-        document.getElementById("sizeRange").addEventListener("input", (e) => {
-            sizeMultiplier = e.target.value;
-        });
+            if (subjects.length < 2) {
+                document.getElementById('result').textContent = 'Нужно ввести хотя бы два предмета!';
+                return;
+            }
 
-        document.getElementById("shapeSelect").addEventListener("change", (e) => {
-            shape = e.target.value;
-        });
+            let removed = subjects.splice(Math.floor(Math.random() * subjects.length), 1);
+            document.getElementById('result').textContent = 'Можно не идти на: ' + removed;
+        }
     </script>
 
 </body>
