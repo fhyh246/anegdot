@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+Ю<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -6,80 +6,116 @@
     <title>Музыкальный Визуализатор</title>
     <style>
         body {
-            margin: 0;
-            overflow: hidden;
-            background: black;
+            text-align: center;
+            background-color: #111;
+            color: white;
+            font-family: Arial, sans-serif;
         }
         canvas {
             display: block;
+            margin: 20px auto;
+            background: black;
+            border-radius: 10px;
+        }
+        .controls {
+            margin-top: 10px;
+        }
+        input, select {
+            margin: 5px;
+            padding: 8px;
         }
     </style>
 </head>
 <body>
+
+    <h1>Музыкальный Визуализатор</h1>
+
+    <button onclick="startVisualization()">🎤 Включить микрофон</button>
+
+    <br>
+
     <canvas id="visualizer"></canvas>
 
+    <div class="controls">
+        <label>Цвет: <input type="color" id="colorPicker" value="#00ffcc"></label>
+        <label>Размер: <input type="range" id="sizeRange" min="10" max="100" value="50"></label>
+        <label>Форма:
+            <select id="shapeSelect">
+                <option value="bars">Полосы</option>
+                <option value="circles">Круги</option>
+            </select>
+        </label>
+    </div>
+
     <script>
-        const canvas = document.getElementById('visualizer');
-        const ctx = canvas.getContext('2d');
-        let audioContext, analyser, bufferLength, dataArray;
+        let audioContext, analyser, dataArray, canvas, ctx;
+        let color = "#00ffcc";
+        let shape = "bars";
+        let sizeMultiplier = 50;
 
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        // Запрашиваем доступ к виртуальному микрофону
-        navigator.mediaDevices.enumerateDevices().then(devices => {
-            // Найди виртуальный микрофон в списке устройств
-            const virtualMic = devices.find(device => device.kind === 'audioinput' && device.label.toLowerCase().includes("virtual"));
-            
-            if (!virtualMic) {
-                console.error("Виртуальный микрофон не найден!");
-                return;
-            }
-
-            // Запрашиваем доступ к виртуальному микрофону
-            navigator.mediaDevices.getUserMedia({ audio: { deviceId: virtualMic.deviceId } })
+        function startVisualization() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(stream => {
                     audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     analyser = audioContext.createAnalyser();
-                    analyser.fftSize = 256;  // Размер FFT для анализа
-                    bufferLength = analyser.frequencyBinCount;  // Количество частотных данных
-                    dataArray = new Uint8Array(bufferLength);  // Массив для хранения данных частот
-
-                    const source = audioContext.createMediaStreamSource(stream);
+                    let source = audioContext.createMediaStreamSource(stream);
                     source.connect(analyser);
-                    analyser.connect(audioContext.destination);
+                    analyser.fftSize = 256;
+                    let bufferLength = analyser.frequencyBinCount;
+                    dataArray = new Uint8Array(bufferLength);
 
-                    drawVisualizer();
+                    canvas = document.getElementById("visualizer");
+                    ctx = canvas.getContext("2d");
+                    canvas.width = window.innerWidth * 0.8;
+                    canvas.height = 300;
+
+                    visualize();
                 })
                 .catch(err => {
-                    console.error("Ошибка доступа к микрофону: " + err);
+                    alert("Ошибка доступа к микрофону: " + err);
                 });
-        }).catch(err => {
-            console.error("Ошибка при перечислении устройств: " + err);
+        }
+
+        function visualize() {
+            requestAnimationFrame(visualize);
+            analyser.getByteFrequencyData(dataArray);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = color;
+
+            let barWidth = (canvas.width / dataArray.length) * 2.5;
+            let radius = sizeMultiplier;
+
+            if (shape === "bars") {
+                for (let i = 0; i < dataArray.length; i++) {
+                    let barHeight = dataArray[i] * (sizeMultiplier / 50);
+                    let x = i * barWidth;
+                    ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                }
+            } else if (shape === "circles") {
+                let centerX = canvas.width / 2;
+                let centerY = canvas.height / 2;
+                let maxRadius = Math.max(...dataArray) * (sizeMultiplier / 100);
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, maxRadius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        document.getElementById("colorPicker").addEventListener("input", (e) => {
+            color = e.target.value;
         });
 
-        // Функция рисования визуализатора
-        function drawVisualizer() {
-            analyser.getByteFrequencyData(dataArray);  // Получаем данные для анализа частот
+        document.getElementById("sizeRange").addEventListener("input", (e) => {
+            sizeMultiplier = e.target.value;
+        });
 
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);  // Очищаем холст
-
-            const barWidth = (canvas.width / bufferLength) * 2.5;
-            let barHeight;
-            let x = 0;
-
-            // Рисуем прямоугольники на основе данных частот
-            for (let i = 0; i < bufferLength; i++) {
-                barHeight = dataArray[i];
-                ctx.fillStyle = `rgb(${barHeight + 100}, 50, 255)`;  // Цвет прямоугольников
-                ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);  // Рисуем бар
-
-                x += barWidth + 1;
-            }
-
-            requestAnimationFrame(drawVisualizer);  // Рекурсивный вызов для плавной анимации
-        }
+        document.getElementById("shapeSelect").addEventListener("change", (e) => {
+            shape = e.target.value;
+        });
     </script>
+
 </body>
 </html>
