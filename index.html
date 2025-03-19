@@ -3,69 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Какие пары можно пропустить?</title>
+    <title>Радио Онлайн</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background-color: #222;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: linear-gradient(45deg, #2c3e50, #8e44ad);
             color: white;
         }
-        input, button {
-            margin: 5px;
+        h1 {
+            margin-top: 20px;
+        }
+        select, button {
             padding: 10px;
             font-size: 16px;
+            margin: 10px;
+            border-radius: 5px;
+            border: none;
         }
-        #subjects {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        button {
+            background: #e74c3c;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #c0392b;
+        }
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        audio {
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-
-    <h1>Какие пары можно пропустить?</h1>
+    <canvas id="visualizer"></canvas>
     
-    <label for="count">Сколько всего пар?</label>
-    <input type="number" id="count" min="1">
-    <button onclick="generateInputs()">Создать список</button>
+    <h1>Слушай радио онлайн</h1>
 
-    <div id="subjects"></div>
-    
-    <button onclick="removeRandom()" id="removeBtn" style="display:none;">Убрать лишнее</button>
+    <label for="stations">Выбери станцию:</label>
+    <select id="stations">
+        <option value="http://ic7.101.ru:8000/a202">Love Radio</option>
+        <option value="http://ep256.hostingradio.ru:8052/europaplus256.mp3">Europa Plus</option>
+        <option value="http://pub0302.101.ru:8000/stream/pro/aac/64/99">Ретро FM</option>
+        <option value="http://nashe1.hostingradio.ru:80/nashe-128.mp3">Наше Радио</option>
+        <option value="http://dfm.hostingradio.ru/dfm96.aacp">DFM</option>
+        <option value="http://ic4.101.ru:8000/a201">Русское Радио</option>
+        <option value="http://icecast-vgtrk.cdnvideo.ru/vestifm_mp3_192kbps">Вести FM</option>
+    </select>
 
-    <h2 id="result"></h2>
+    <button onclick="changeStation()">Слушать</button>
+
+    <audio id="radioPlayer" controls autoplay>
+        <source id="radioSource" src="http://ic7.101.ru:8000/a202" type="audio/mpeg">
+        Ваш браузер не поддерживает аудио.
+    </audio>
 
     <script>
-        function generateInputs() {
-            let count = document.getElementById('count').value;
-            let subjectsDiv = document.getElementById('subjects');
-            subjectsDiv.innerHTML = '';
-
-            for (let i = 0; i < count; i++) {
-                let input = document.createElement('input');
-                input.type = 'text';
-                input.placeholder = 'Название предмета ' + (i + 1);
-                subjectsDiv.appendChild(input);
-            }
+        function changeStation() {
+            let player = document.getElementById("radioPlayer");
+            let source = document.getElementById("radioSource");
+            let selectedStation = document.getElementById("stations").value;
             
-            document.getElementById('removeBtn').style.display = 'block';
+            source.src = selectedStation;
+            player.load();
+            player.play();
         }
 
-        function removeRandom() {
-            let inputs = document.querySelectorAll('#subjects input');
-            let subjects = Array.from(inputs).map(input => input.value).filter(v => v.trim() !== '');
+        // Аудиовизуализатор
+        const audio = document.getElementById("radioPlayer");
+        const canvas = document.getElementById("visualizer");
+        const ctx = canvas.getContext("2d");
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-            if (subjects.length < 2) {
-                document.getElementById('result').textContent = 'Нужно ввести хотя бы два предмета!';
-                return;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const analyser = audioCtx.createAnalyser();
+        const source = audioCtx.createMediaElementSource(audio);
+        
+        source.connect(analyser);
+        analyser.connect(audioCtx.destination);
+        analyser.fftSize = 256;
+
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        function draw() {
+            requestAnimationFrame(draw);
+            analyser.getByteFrequencyData(dataArray);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let barWidth = (canvas.width / bufferLength) * 2.5;
+            let barHeight;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                barHeight = dataArray[i];
+                ctx.fillStyle = `rgb(${barHeight + 100}, 50, 200)`;
+                ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                x += barWidth + 1;
             }
-
-            let removed = subjects.splice(Math.floor(Math.random() * subjects.length), 1);
-            document.getElementById('result').textContent = 'Можно не идти на: ' + removed;
         }
-    </script>
 
+        audio.onplay = () => {
+            if (audioCtx.state === "suspended") {
+                audioCtx.resume();
+            }
+            draw();
+        };
+
+        window.addEventListener("resize", () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
 </body>
 </html>
